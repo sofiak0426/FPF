@@ -1,0 +1,16 @@
+D:\PivotMS\ResultReader\bin\Release\ResultReader.dll
+D:\PivotMS\ResultReader\bin\Release\ResultReader.pdb
+D:\PivotMS\ResultReader\obj\Release\ResultReader.dll
+D:\PivotMS\ResultReader\obj\Release\ResultReader.pdb
+D:\My_work\SearchResultReader_2016_0704\ResultReader\bin\Release\ResultReader.dll
+D:\My_work\SearchResultReader_2016_0704\ResultReader\bin\Release\ResultReader.pdb
+D:\My_work\SearchResultReader_2016_0704\ResultReader\obj\Release\ResultReader.dll
+D:\My_work\SearchResultReader_2016_0704\ResultReader\obj\Release\ResultReader.pdb
+D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\bin\Release\ResultReader.dll
+D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\bin\Release\ResultReader.pdb
+D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\bin\Release\ICSharpCode.SharpZipLib.dll
+D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\bin\Release\NPOI.dll
+D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\bin\Release\NPOI.xml
+D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\obj\Release\ResultReader.csprojResolveAssemblyReference.cache
+D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\obj\Release\ResultReader.dll
+D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\obj\Release\ResultReader.pdb
