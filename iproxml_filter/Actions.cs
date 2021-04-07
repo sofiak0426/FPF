@@ -38,10 +38,7 @@ namespace iproxml_filter
                     ReadDbIproFile();
                     break;
                 case 1:
-                    //ReadDbSpstIntens(this.mainDir + iproDbSpstFile);
-                    break;
-                case 2:
-                    ReadDbSpstPepProt(this.mainDir + iproDbSpstFile);
+                    ReadDbSpstPepProt();
                     break;
             }
             return (String.Format("{0} Done", id));
@@ -62,33 +59,25 @@ namespace iproxml_filter
         {
             //Read parameters file
             this.mainDir = mainDir;
-            dataContainerObj = new ds_DataContainer();
-            filterListObj = new ds_PsmFilterParam();
-<<<<<<< HEAD
-            Console.WriteLine(this.mainDir + paramFile);
-=======
->>>>>>> f70e3c0a2d04ccdf2d34744ace106d0068f12d9a
+            this.dataContainerObj = new ds_DataContainer();
+            this.filterListObj = new ds_PsmFilterParam();
             this.ReadParamFile(this.mainDir + paramFile);
 
-            List<int> workerIds = new List<int>{0,1,2};
+            List<int> workerIds = new List<int>{0,1};
             Parallel.ForEach(workerIds, workerId =>
             {
                 string result = this.DoWorkerJobs(workerId);
                 Console.WriteLine(result); //temporarily for testing
             });
+
             //Calculate intra-pep and intra-prot euclidean distance for each PSM
             this.CalIntraProtEuDist();
-
             return;
-
         }
 
         private void ReadParamFile(string paramFile)
         {
-<<<<<<< HEAD
             Console.WriteLine("Reading parameter file...");
-=======
->>>>>>> f70e3c0a2d04ccdf2d34744ace106d0068f12d9a
             string line;
             using StreamReader paramFileReader = new StreamReader(paramFile);
             int lineCnt = 0; //count current number of valid lines
@@ -135,20 +124,17 @@ namespace iproxml_filter
                 }
             }
             paramFileReader.Close();
-            //filterListObj.PrintFilter(); //testing
+            //this.filterListObj.PrintFilter(); //testing
             return;
         }
 
         /// <summary>
         /// 
         /// </summary>
-<<<<<<< HEAD
         /// <param name="lineCnt"> Specify number of feature in the param name list</param>
         /// <param name="filterStr">The string that contains features, read from param file</param>
-=======
         /// <param name="lineCnt"> Specify feature in the </param>
         /// <param name="filterStr"></param>
->>>>>>> f70e3c0a2d04ccdf2d34744ace106d0068f12d9a
         private bool AddFilters(int lineCnt, string filterStr)
         {
             String[] filterArr = filterStr.Split(',');
@@ -169,11 +155,7 @@ namespace iproxml_filter
                 else
                     double.TryParse(filtLimArr[1], out filtLim.upperLim);
 
-<<<<<<< HEAD
-                if (!filterListObj.AddFilter(paramNames[lineCnt - 1], filtLim))
-=======
-                if (!filterListObj.Add(paramNames[lineCnt - 1], filtLim))
->>>>>>> f70e3c0a2d04ccdf2d34744ace106d0068f12d9a
+                if (!this.filterListObj.AddFilter(paramNames[lineCnt - 1], filtLim))
                     return false;
             }
             return true;
@@ -181,7 +163,7 @@ namespace iproxml_filter
 
         private void ReadDbIproFile()
         {
-            using XmlReader dbFileReader = XmlReader.Create(iproDbFile);
+            using XmlReader dbFileReader = XmlReader.Create(this.mainDir + this.iproDbFile);
             while (dbFileReader.Read())
             {
                 if (dbFileReader.NodeType != XmlNodeType.Element)
@@ -193,65 +175,21 @@ namespace iproxml_filter
             return;
         }
 
-        //spec to spst
-        /*
-        private void ReadDbSpstIntens(string iproSpecFile)
-        {
-            using XmlReader iproFileReader = XmlReader.Create(iproDbSpstFile);
-            while (iproFileReader.Read())
-            {
-                if (iproFileReader.NodeType != XmlNodeType.Element)
-                    continue;
-
-                if (iproFileReader.Name == "spectrum_query") //Read only spectrum name and intensities
-                {
-                    string psmName = iproFileReader.GetAttribute("spectrum");
-                    List<double> libraIntenLi = new List<double>();
-                    XmlReader PsmReader = iproFileReader.ReadSubtree();
-                    while (PsmReader.Read())
-                    {
-                        if (PsmReader.NodeType != XmlNodeType.Element ||
-                            PsmReader.Name != "libra_result")
-                            continue;
-
-                        //read intensities
-                        XmlReader intensReader = PsmReader.ReadSubtree();
-                        while (intensReader.Read())
-                        {
-                            if (intensReader.Name != "intensity")
-                                continue;
-                            double.TryParse(intensReader.GetAttribute("normalized"),
-                                out double intens);
-                            libraIntenLi.Add(intens);
-                        }
-                        break;
-                    }
-                    List<double> errorLi = CalRatio(libraIntenLi);
-                    dataContainerObj.dbSpecPsmDic.Add(psmName, new ds_DbSpecPsm(psmName, errorLi));
-                }
-            }
-        }
-        */
-        private void ReadDbSpstPepProt(string iproSpstFile)
+        private void ReadDbSpstPepProt()
         {
             PepXmlProtXmlReader spstIproFileReader = new PepXmlProtXmlReader();
-            this.dataContainerObj.dbSpstIproResult = spstIproFileReader.ReadFiles(iproSpstFile, "",
+            this.dataContainerObj.dbSpstIproResult = spstIproFileReader.ReadFiles(this.mainDir + this.iproDbSpstFile, "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="intensLi"></param>
-        /// <returns></returns>
-        private List<double> CalRatio(List<double> intensLi) //calculate channel error of psms
+        private List<double> CalRatio(List<double> intenLi) //calculate channel error of psms
         {
             List<double> ratioLi = new List<double>();
             for (int i = 0; i < channelCnt; i++)
             {
                 if (i + 1 == refChan) //skip reference channel
                     continue;
-                double ratio = intensLi[i] / intensLi[refChan - 1];
+                double ratio = intenLi[i] / intenLi[refChan - 1];
                 ratioLi.Add(Math.Round(ratio, 4));
             }
             return ratioLi;
@@ -261,37 +199,65 @@ namespace iproxml_filter
         {
             foreach (KeyValuePair<string, ds_Protein> prot in dataContainerObj.dbSpstIproResult.Protein_Dic)
             {
-                //get all psm names in this protein
-                List<string> psmsInProtLi = new List<string>();
-                foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
+                //get all ratios of PSMs in this protein
+                List<string> psmNameLi = new List<string>();
+                List<List<double>> allPsmsRatioLi = new List<List<double>>();
+                List<double> totalRatioLi = new List<double>(); //Store total intensity of all PSMs in the protein for further use
+                for (int i = 0; i < channelCnt - 1; i++)
+                    totalRatioLi.Add(0.0);
+
+                foreach (KeyValuePair <string, ds_Peptide> pep in prot.Value.Peptide_Dic)
                 {
-                    foreach (ds_PSM psm in pep.Value.PsmList)
+                    foreach(ds_PSM psm in pep.Value.PsmList)
                     {
-                        psmsInProtLi.Add(psm.QueryNumber);
+                        //get intensity
+                        List<double> intenLi = new List<double>();
+                        intenLi.AddRange(psm.Libra_ChanIntenDi.Values);
+                        List<double> ratioLi = CalRatio(intenLi);
+                        psmNameLi.Add(psm.QueryNumber);
+                        allPsmsRatioLi.Add(ratioLi);
+                        //Add to total intensity
+                        for (int i = 0; i < channelCnt - 1; i++)
+                            totalRatioLi[i] += ratioLi[i];
                     }
                 }
 
-                //if there is only one PSM in this protein: set euclidean to 0
-                if (psmsInProtLi.Count == 1)
-                    continue;
+                Console.WriteLine(prot.Key + ":");
+                foreach (string name in psmNameLi)
+                    Console.Write(name + ",");
+                Console.Write("\n");
 
-                //get all ratios of psms in this protein
-                Dictionary<string, List<double>> allPsmRatioDic = new Dictionary<string, List<double>>();
-                foreach (string psmName in psmsInProtLi)
+                int psmCountInProt = allPsmsRatioLi.Count;
+                if (psmCountInProt == 1) //If only one PSM, set euclidean distance to 0
                 {
-                    List<double> error = new List<double>();
-                    error = dataContainerObj.dbSpecPsmDic[psmName].ErrorLi;
-                    allPsmRatioDic.Add(psmName, error);
+                    this.dataContainerObj.intraProtEuDistDic.Add(psmNameLi[0], 0);
+                    continue;
                 }
+
+                //Store average ratio for each channel for all PSMs in protein
+                List<double> avgRatioLi = new List<double>();
+                for (int i = 0; i < channelCnt - 1; i++)
+                    avgRatioLi.Add(totalRatioLi[i] / psmCountInProt);
 
                 //calculate euclidean
-                foreach (KeyValuePair<string, List<double>> psm in allPsmRatioDic)
+                for (int i = 0; i < psmNameLi.Count; i++)
                 {
-                    for (int i = 0; i < channelCnt - 1; i++)
-                    { }
-                }
+                    double dist = 0;
+                    for (int j = 0; j < channelCnt - 1; j++)//For each channel
+                    {
+                        //avgOtherRatio: For a single channel, avg ratio of other PSMs (except the current PSM) in this protein
+                        double avgOtherRatio = (totalRatioLi[j] - allPsmsRatioLi[i][j]) / (psmCountInProt - 1);
+                        double d = Math.Abs((allPsmsRatioLi[i][j] - avgOtherRatio) / avgRatioLi[j]);
+                        dist += Math.Pow(d, 2);
+                    }
+                    dist = Math.Sqrt(dist);
 
+                    //Add the PSM's euclidean distance to Dictionary
+                    this.dataContainerObj.intraProtEuDistDic.Add(psmNameLi[i], dist);
+                    Console.WriteLine(String.Format("{0},{1}", psmNameLi[i], dist));
+                }
             }
+            return;
         }
     }
 }
