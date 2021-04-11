@@ -8,6 +8,6 @@ namespace iproxml_filter
         public List<string> dbPsmNameLi = new List<string>(); //list for all database-searched PSM names
         public Dictionary<string, double> intraPepEuDistDic = new Dictionary <string, double>();
         public Dictionary<string, double> intraProtEuDistDic = new Dictionary<string, double>();
-        public ds_SearchResult dbSpstIproResult;
+        public ds_SearchResult iproDbSpstResult;
     }
 }
