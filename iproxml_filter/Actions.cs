@@ -44,9 +44,6 @@ namespace iproxml_filter
                 case 1:
                     this.ReadIproDbSpst();
                     break;
-                case 2:
-                    this.CalIntraProtEuDist();
-                    break;
             }
             return (String.Format("{0} Done", id));
         }
@@ -76,14 +73,8 @@ namespace iproxml_filter
                 string result = this.DoWorkerJobs(workerId);
                 Console.WriteLine(result); //temporarily for testing
             });
-            
-            //Calculate intra-pep and intra-prot euclidean distance for each PSM
-            workerIds = new List<int> {2};
-            Parallel.ForEach(workerIds, workerId =>
-            {
-                string result = this.DoWorkerJobs(workerId);
-                Console.WriteLine(result); //temporarily for testing
-            });
+
+            CalEuDist();
             
             //this.FilterDbSpstIproFile();
             return;
@@ -218,35 +209,68 @@ namespace iproxml_filter
             return ratioLi;
         }
 
-        private void CalIntraProtEuDist() //calculate intra-prot euclidean for each psm in db + spec file
+        private List<double> GetEuDistFromRatio(List<List<double>> psmsRatioLi, List<double> psmsTotalRatioLi)
         {
-            using StreamWriter file = new StreamWriter("./eupsms.txt");
+            List<double> euDistLi = new List<double>();
+            if (psmsRatioLi.Count == 1) //If there is only one PSM in the set, set euclidean distance to 0
+            {
+                euDistLi.Add(0.0);
+                return euDistLi;
+            }
+
+            //Store average ratio for each channel for all PSMs in protein
+            List<double> avgRatioLi = new List<double>();
+            for (int i = 0; i < this.channelCnt - 1; i++)
+                avgRatioLi.Add(psmsTotalRatioLi[i] / psmsRatioLi.Count);
+
+            //calculate euclidean for each psm
+            for (int i = 0; i < psmsRatioLi.Count; i++)
+            {
+                double dist = 0;
+                for (int j = 0; j < this.channelCnt - 1; j++)//For each channel
+                {
+                    //avgOtherRatio: For a single channel, avg ratio of other PSMs (except the current PSM) in this protein
+                    double avgOtherRatio = (psmsTotalRatioLi[j] - psmsRatioLi[i][j]) / (psmsRatioLi.Count - 1);
+                    double d = Math.Abs((psmsRatioLi[i][j] - avgOtherRatio) / avgRatioLi[j]);
+                    dist += Math.Pow(d, 2);
+                }
+                dist = Math.Round(Math.Sqrt(dist),4);
+                euDistLi.Add(dist);
+            }
+            return euDistLi;
+        }
+
+        private void CalEuDist() //calculate intra-prot euclidean for each psm in db + spec file
+        {
             foreach (KeyValuePair<string, ds_Protein> prot in dataContainerObj.iproDbSpstResult.Protein_Dic)
             {
-                
+                //Lists for intra-protein euclidean distance 
+                List<string> psmsInProtNameLi = new List<string>(); //Store all names of PSMs in this protein
+                List<List<double>> psmsInProtRatioLi = new List<List<double>>(); //Store channel ratio of all PSMs in the protein
+                List<double> psmsInProtTotalRatioLi = new List<double>(); //Store channel ratio sum of all PSMs in the protein for further use
+                for (int i = 0; i < this.channelCnt - 1; i++)
+                    psmsInProtTotalRatioLi.Add(0.0);
+
                 //Ignore decoy proteins
                 if (prot.Value.ProtID.StartsWith(decoyPrefix))
                     continue;
-                
-                //get all ratios of PSMs in this protein
-                List<string> psmNameLi = new List<string>();
-                List<List<double>> allPsmsRatioLi = new List<List<double>>();
-                List<double> totalRatioLi = new List<double>(); //Store total intensity of all PSMs in the protein for further use
-                for (int i = 0; i < channelCnt - 1; i++)
-                    totalRatioLi.Add(0.0);
 
                 foreach (KeyValuePair <string, ds_Peptide> pep in prot.Value.Peptide_Dic)
                 {
+                    //Lists for intra-peptide euclidean distance
+                    List<string> psmsInPepNameLi = new List<string>();
+                    List<List<double>> psmsInPepRatioLi = new List<List<double>>();
+                    List<double> psmsInPepTotalRatioLi = new List<double>(); //Store channel ratio sum of all PSMs in the peptide for further use
+                    for (int i = 0; i < this.channelCnt - 1; i++)
+                        psmsInPepTotalRatioLi.Add(0.0);
+
                     //Get psms that doesn't have a shared peptide
                     if (pep.Value.b_IsUnique == false)
-                    {
                         continue;
-                    }
 
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
-                        //Get psms with interprophet probability FDR > 1%
-                        //Console.WriteLine(psm.QueryNumber);
+                        //Ignore psms with interprophet probability < 1% FDR probability
                         string keyScoreType = this.dataContainerObj.iproDbSpstResult.GetKeyScoreStr();
                         Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
                         double psmScore = 0;
@@ -257,58 +281,52 @@ namespace iproxml_filter
                         if (psmScore < this.fdr001)
                             continue;
                         
-                        //get intensity
-                        List<double> intenLi = new List<double>();
-                        intenLi.AddRange(psm.Libra_ChanIntenDi.Values);
-                        if (intenLi.Contains(0)) //Only get PSMs that has no missing intensity value
+                        //get intensity and ratio
+                        List<double> psmIntenLi = new List<double>();
+                        psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
+                        if (psmIntenLi.Contains(0)) //Only get PSMs that has no missing intensity value
                             continue;
-                        List<double> ratioLi = CalRatio(intenLi);
-                        psmNameLi.Add(psm.QueryNumber);
-                        allPsmsRatioLi.Add(ratioLi);
-                        //Add to total intensity
-                        for (int i = 0; i < channelCnt - 1; i++)
-                            totalRatioLi[i] += ratioLi[i];
-                        
+                        List<double> psmRatioLi = CalRatio(psmIntenLi);
+
+                        //Add name and ratio to peptide and protein lists
+                        psmsInPepNameLi.Add(psm.QueryNumber);
+                        psmsInProtNameLi.Add(psm.QueryNumber);
+                        psmsInPepRatioLi.Add(psmRatioLi);
+                        psmsInProtRatioLi.Add(psmRatioLi);
+
+                        //Add ratio to total ratio
+                        for (int i = 0; i < this.channelCnt - 1; i++)
+                        {
+                            psmsInPepTotalRatioLi[i] += psmRatioLi[i];
+                            psmsInProtTotalRatioLi[i] += psmRatioLi[i];
+                        }
                     }
+
+                    //Calculate intra-peptide euclidean distance and add to dictionary
+                    List<double> intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
+                    for(int i  = 0; i < psmsInPepNameLi.Count; i++)
+                        this.dataContainerObj.intraPepEuDistDic.Add(psmsInPepNameLi[i], intraPepEuDistLi[i]);
+                    /*
+                    Console.WriteLine("Here");
+
+                    //Reset values
+                    psmsInPepNameLi.RemoveRange(0,psmsInPepNameLi.Count);
+                    psmsInPepRatioLi.Clear();
+                    for (int i = 0; i < this.channelCnt - 1; i++)
+                        psmsInPepTotalRatioLi.Add(0.0);
+                    */
                 }
+
+                //Calculate intra-protein euclidean distance and store to dictionary
+                List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
+                for (int i = 0; i < psmsInProtNameLi.Count; i++)
+                    this.dataContainerObj.intraProtEuDistDic.Add(psmsInProtNameLi[i], intraProtEuDistLi[i]);
                 /*
-                Console.WriteLine(prot.Key + ":");
-                foreach (string name in psmNameLi)
-                    Console.Write(name + ",");
-                Console.Write("\n");
+                psmsInProtNameLi.Clear();
+                psmsInProtRatioLi.Clear();
+                for (int i = 0; i < this.channelCnt - 1; i++)
+                    psmsInProtTotalRatioLi.Add(0.0);
                 */
-                
-                int psmCountInProt = allPsmsRatioLi.Count;
-                if (psmCountInProt == 1) //If only one PSM, set euclidean distance to 0
-                {
-                    this.dataContainerObj.intraProtEuDistDic.Add(psmNameLi[0], 0);
-                    continue;
-                }
-
-                //Store average ratio for each channel for all PSMs in protein
-                List<double> avgRatioLi = new List<double>();
-                for (int i = 0; i < channelCnt - 1; i++)
-                    avgRatioLi.Add(totalRatioLi[i] / psmCountInProt);
-
-                //calculate euclidean
-                for (int i = 0; i < psmNameLi.Count; i++)
-                {
-                    double dist = 0;
-                    for (int j = 0; j < channelCnt - 1; j++)//For each channel
-                    {
-                        //avgOtherRatio: For a single channel, avg ratio of other PSMs (except the current PSM) in this protein
-                        double avgOtherRatio = (totalRatioLi[j] - allPsmsRatioLi[i][j]) / (psmCountInProt - 1);
-                        double d = Math.Abs((allPsmsRatioLi[i][j] - avgOtherRatio) / avgRatioLi[j]);
-                        dist += Math.Pow(d, 2);
-                    }
-                    dist = Math.Sqrt(dist);
-
-                    //Add the PSM's euclidean distance to Dictionary
-                    this.dataContainerObj.intraProtEuDistDic.Add(psmNameLi[i], dist);
-                    Console.WriteLine(psmNameLi[i]);
-                    file.WriteLine(psmNameLi[i]);
-                }
-                
             }
             return;
         }
