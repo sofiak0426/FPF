@@ -248,8 +248,14 @@ namespace iproxml_filter
                 List<string> psmsInProtNameLi = new List<string>(); //Store all names of PSMs in this protein
                 List<List<double>> psmsInProtRatioLi = new List<List<double>>(); //Store channel ratio of all PSMs in the protein
                 List<double> psmsInProtTotalRatioLi = new List<double>(); //Store channel ratio sum of all PSMs in the protein for further use
+                List<string> singlePsmPepNameLi = new List<string>(); //Store all names of PSMs in this protein
+                List<List<double>> singlePsmPepRatioLi = new List<List<double>>(); //Store channel ratio of all PSMs in the protein
+                List<double> singlePsmPepTotalRatioLi = new List<double>(); //Store channel ratio sum of all PSMs in the protein for further use
                 for (int i = 0; i < this.channelCnt - 1; i++)
+                {
                     psmsInProtTotalRatioLi.Add(0.0);
+                    singlePsmPepTotalRatioLi.Add(0.0);
+                }
 
                 //Ignore decoy proteins
                 if (prot.Value.ProtID.StartsWith(decoyPrefix))
@@ -303,30 +309,38 @@ namespace iproxml_filter
                     }
 
                     //Calculate intra-peptide euclidean distance and add to dictionary
-                    List<double> intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
-                    for(int i  = 0; i < psmsInPepNameLi.Count; i++)
-                        this.dataContainerObj.intraPepEuDistDic.Add(psmsInPepNameLi[i], intraPepEuDistLi[i]);
-                    /*
-                    Console.WriteLine("Here");
-
-                    //Reset values
-                    psmsInPepNameLi.RemoveRange(0,psmsInPepNameLi.Count);
-                    psmsInPepRatioLi.Clear();
-                    for (int i = 0; i < this.channelCnt - 1; i++)
-                        psmsInPepTotalRatioLi.Add(0.0);
-                    */
+                    List<double> intraPepEuDistLi = new List<double>();
+                    if (psmsInPepNameLi.Count != 1) //There are more than one psms in the list
+                    {
+                        intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
+                        for (int i = 0; i < psmsInPepNameLi.Count; i++)
+                            this.dataContainerObj.intraPepEuDistDic.Add(psmsInPepNameLi[i], intraPepEuDistLi[i]);
+                    }
+                    else //Add the PSM data to singlePsmPep 
+                    {
+                        singlePsmPepNameLi.Add(psmsInPepNameLi[0]);
+                        singlePsmPepRatioLi.Add(psmsInPepRatioLi[0]);
+                        for (int i = 0; i < this.channelCnt - 1; i++)
+                            singlePsmPepTotalRatioLi[i] += psmsInPepTotalRatioLi[i];
+                    }
                 }
 
                 //Calculate intra-protein euclidean distance and store to dictionary
                 List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
                 for (int i = 0; i < psmsInProtNameLi.Count; i++)
                     this.dataContainerObj.intraProtEuDistDic.Add(psmsInProtNameLi[i], intraProtEuDistLi[i]);
-                /*
-                psmsInProtNameLi.Clear();
-                psmsInProtRatioLi.Clear();
-                for (int i = 0; i < this.channelCnt - 1; i++)
-                    psmsInProtTotalRatioLi.Add(0.0);
-                */
+
+                //Calculate intra-peptide euclidean distance for peptides with only one PSM and store to dictionary
+                if (singlePsmPepNameLi.Count == 0)
+                    continue;
+                else if (singlePsmPepNameLi.Count == 1)
+                    this.dataContainerObj.intraPepEuDistDic.Add(singlePsmPepNameLi[0], 0);
+                else
+                {
+                    List<double> singlePsmIntraPepEuDistLi = GetEuDistFromRatio(singlePsmPepRatioLi, singlePsmPepTotalRatioLi);
+                    for (int i = 0; i < singlePsmPepNameLi.Count; i++)
+                        this.dataContainerObj.intraPepEuDistDic.Add(singlePsmPepNameLi[i], singlePsmIntraPepEuDistLi[i]);
+                }
             }
             return;
         }
