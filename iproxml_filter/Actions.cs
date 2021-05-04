@@ -16,6 +16,7 @@ namespace iproxml_filter
             "Database Iprophet Search File","Database + SpectraST Iprophet Search File","Output File",
             "Channel Number","Reference Channel","Decoy Prefix", "Charge", "Mass", "Peptide Length",
             "Intra-Peptide Euclidean Distance","Intra-Protein Euclidean Distance" };
+        public readonly object infoLock = new object(); //For adding a psm to the info list
 
         //Global Variables
         public string mainDir;
@@ -32,7 +33,7 @@ namespace iproxml_filter
         public ds_PsmFilterParam filterListObj;
 
         /// <summary>
-        /// Defines thread action by id
+        /// Defines thread actions by specified id
         /// </summary>
         public string DoWorkerJobs(int id)
         {
@@ -76,10 +77,15 @@ namespace iproxml_filter
 
             CalEuDist();
             
-            //this.FilterDbSpstIproFile();
+            this.FilterDbSpstIproFile();
             return;
         }
 
+        /// <summary>
+        /// Reads the parameter file line by line and modifies global variables.
+        /// Checks whether the parameter name for each line corresponds to the list paramNames.
+        /// </summary>
+        /// <param name="paramFile">Paramter file name</param>
         private void ReadParamFile(string paramFile)
         {
             Console.WriteLine("Reading parameter file...");
@@ -140,12 +146,10 @@ namespace iproxml_filter
         }
 
         /// <summary>
-        /// 
+        /// Adds filter ranges for each feature, as specified by the user in the param file, to filter list for further use.
         /// </summary>
         /// <param name="lineCnt"> Specify number of feature in the param name list</param>
-        /// <param name="filterStr">The string that contains features, read from param file</param>
-        /// <param name="lineCnt"> Specify feature in the </param>
-        /// <param name="filterStr"></param>
+        /// <param name="filterStr">The string containing ranges of filters, which is read from the param file</param>
         private bool AddFilters(int lineCnt, string filterStr)
         {
             String[] filterArr = filterStr.Split(',');
@@ -172,6 +176,9 @@ namespace iproxml_filter
             return true;
         }
 
+        /// <summary>
+        /// Parse PSM names that are in the database search iprophet file
+        /// </summary>
         private void ReadIproDb()
         {
             using XmlReader IproDbReader = XmlReader.Create(this.mainDir + this.iproDbFile);
@@ -186,6 +193,9 @@ namespace iproxml_filter
             return;
         }
 
+        /// <summary>
+        /// Parse database + spectraST serach iprophet file with search result reader
+        /// </summary>
         private void ReadIproDbSpst()
         {
             PepXmlProtXmlReader iproDbSpstReader = new PepXmlProtXmlReader();
@@ -194,6 +204,14 @@ namespace iproxml_filter
 
             //get fdr < 1% probability
             this.fdr001 = dataContainerObj.iproDbSpstResult.GetPepMinProbForFDR(0.01f, "");
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        private void AddPsmInfo()
+        {
+            
         }
 
         private List<double> CalRatio(List<double> intenLi) //calculate channel error of psms
@@ -240,7 +258,7 @@ namespace iproxml_filter
             return euDistLi;
         }
 
-        private void CalEuDist() //calculate intra-prot euclidean for each psm in db + spec file
+        private void CalEuDist()
         {
             foreach (KeyValuePair<string, ds_Protein> prot in dataContainerObj.iproDbSpstResult.Protein_Dic)
             {
@@ -261,7 +279,7 @@ namespace iproxml_filter
                 if (prot.Value.ProtID.StartsWith(decoyPrefix))
                     continue;
 
-                foreach (KeyValuePair <string, ds_Peptide> pep in prot.Value.Peptide_Dic)
+                foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
                 {
                     //Lists for intra-peptide euclidean distance
                     List<string> psmsInPepNameLi = new List<string>();
@@ -286,7 +304,7 @@ namespace iproxml_filter
                             continue;
                         if (psmScore < this.fdr001)
                             continue;
-                        
+
                         //get intensity and ratio
                         List<double> psmIntenLi = new List<double>();
                         psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
@@ -314,7 +332,14 @@ namespace iproxml_filter
                     {
                         intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
                         for (int i = 0; i < psmsInPepNameLi.Count; i++)
-                            this.dataContainerObj.intraPepEuDistDic.Add(psmsInPepNameLi[i], intraPepEuDistLi[i]);
+                        {
+                            if (!this.dataContainerObj.psmInfoDic.ContainsKey(psmsInPepNameLi[i])) // if the PSM is not added to dic yet
+                            {
+                                lock (infoLock)
+                                    this.dataContainerObj.psmInfoDic.Add(psmsInPepNameLi[i], new PsmInfo());
+                            }
+                            this.dataContainerObj.psmInfoDic[psmsInPepNameLi[i]].IntraPepEuDist = intraPepEuDistLi[i];
+                        }
                     }
                     else //Add the PSM data to singlePsmPep 
                     {
@@ -328,18 +353,25 @@ namespace iproxml_filter
                 //Calculate intra-protein euclidean distance and store to dictionary
                 List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
                 for (int i = 0; i < psmsInProtNameLi.Count; i++)
-                    this.dataContainerObj.intraProtEuDistDic.Add(psmsInProtNameLi[i], intraProtEuDistLi[i]);
+                {
+                    if (!this.dataContainerObj.psmInfoDic.ContainsKey(psmsInProtNameLi[i])) // if the PSM is not added to dic yet
+                    {
+                        lock(infoLock)
+                            this.dataContainerObj.psmInfoDic.Add(psmsInProtNameLi[i], new PsmInfo());
+                    }
+                    this.dataContainerObj.psmInfoDic[psmsInProtNameLi[i]].IntraProtEuDist = intraProtEuDistLi[i];
+                }
 
                 //Calculate intra-peptide euclidean distance for peptides with only one PSM and store to dictionary
                 if (singlePsmPepNameLi.Count == 0)
                     continue;
                 else if (singlePsmPepNameLi.Count == 1)
-                    this.dataContainerObj.intraPepEuDistDic.Add(singlePsmPepNameLi[0], 0);
+                    this.dataContainerObj.psmInfoDic[singlePsmPepNameLi[0]].IntraPepEuDist = 0;
                 else
                 {
                     List<double> singlePsmIntraPepEuDistLi = GetEuDistFromRatio(singlePsmPepRatioLi, singlePsmPepTotalRatioLi);
                     for (int i = 0; i < singlePsmPepNameLi.Count; i++)
-                        this.dataContainerObj.intraPepEuDistDic.Add(singlePsmPepNameLi[i], singlePsmIntraPepEuDistLi[i]);
+                        this.dataContainerObj.psmInfoDic[singlePsmPepNameLi[i]].IntraPepEuDist = singlePsmIntraPepEuDistLi[i];
                 }
             }
             return;
@@ -347,23 +379,27 @@ namespace iproxml_filter
        
         private void FilterDbSpstIproFile()
         {
+            //Xml reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
             XmlReader iproDbSpstReader = XmlReader.Create(this.mainDir + this.iproDbSpstFile, readerSettings);
-            //Xml writer settings
-            XmlWriterSettings writerSettings = new XmlWriterSettings {Indent = true, IndentChars = "\t"};
+            XmlReader msmsReader = iproDbSpstReader;
+            //Xml writer setup
+            XmlWriterSettings writerSettings = new XmlWriterSettings {Indent = true, IndentChars = " "};
             XmlWriter modIproDbSpstWriter = XmlWriter.Create(this.mainDir + this.modIproDbSpstFile, writerSettings);
             int i = 0;
             while (true)
             {
+                /*
                 if (i < 3)
                 {
-                    Console.WriteLine(i);
-                    Console.WriteLine(iproDbSpstReader.Name);
-                    Console.WriteLine(iproDbSpstReader.NodeType);
-                    Console.WriteLine(iproDbSpstReader.AttributeCount);
+                    Console.Write(i);
+                    Console.Write(iproDbSpstReader.Name);
+                    Console.Write(iproDbSpstReader.NodeType);
+                    Console.Write(iproDbSpstReader.AttributeCount);
                 }
                 i++;
-
+                */
+                Console.WriteLine("Start:"+iproDbSpstReader.Name);
                 if (iproDbSpstReader.Name == "xml") //read xml header
                 {
                     modIproDbSpstWriter.WriteNode(iproDbSpstReader, false);
@@ -371,67 +407,84 @@ namespace iproxml_filter
                 }
                 else if (iproDbSpstReader.Name == "msms_pipeline_analysis") //read namespaces
                 {
-                    Console.WriteLine(iproDbSpstReader.GetAttribute("date"));
-                    Console.WriteLine(iproDbSpstReader.GetAttribute("xmlns:xsi"));
-                    Console.WriteLine(iproDbSpstReader.GetAttribute("xsi:schemaLocation"));
-                    Console.WriteLine(iproDbSpstReader.GetAttribute("summary_xml"));
+                    //Console.WriteLine(iproDbSpstReader.GetAttribute("date"));
+                    //Console.WriteLine(iproDbSpstReader.GetAttribute("xmlns:xsi"));
+                    //Console.WriteLine(iproDbSpstReader.GetAttribute("xsi:schemaLocation"));
+                    //Console.WriteLine(iproDbSpstReader.GetAttribute("summary_xml"));
                     modIproDbSpstWriter.WriteStartElement(iproDbSpstReader.Name, iproDbSpstReader.GetAttribute("xmlns"));
                     modIproDbSpstWriter.WriteAttributeString("date", iproDbSpstReader.GetAttribute("date"));
-                    //modIproDbSpstWriter.WriteAttributeString("xmlns", "xsi", null, iproDbSpstReader.GetAttribute("xmlns:xsi")); //needs to be checked
                     modIproDbSpstWriter.WriteAttributeString("xsi", "schemaLocation", iproDbSpstReader.GetAttribute("xmlns:xsi"), iproDbSpstReader.GetAttribute("xsi:schemaLocation"));
                     modIproDbSpstWriter.WriteAttributeString("summary_xml", iproDbSpstReader.GetAttribute("summary_xml"));
                 }
-                /*
-                else if (iproDbSpstReader.Name != "msms_run_summary")
+                else if (iproDbSpstReader.Name == "analysis_summary") //Other analysis summaries
                 {
-                    Console.WriteLine(iproDbSpstReader.Name);
                     modIproDbSpstWriter.WriteNode(iproDbSpstReader, false);
-                    break;
-                    //continue;
+                    continue;
                 }
-                */
-                Console.WriteLine(iproDbSpstReader.Name) ;
+                else if (iproDbSpstReader.Name == "msms_run_summary") //Contain PSM information
+                {
+                    msmsReader = iproDbSpstReader.ReadSubtree();
+                    ReadMsms(msmsReader, modIproDbSpstWriter);
+                    //iproDbSpstReader.Skip();
+                    //continue;
+                    break; //for testing
+                }
+                else
+                    Console.WriteLine(String.Format("Warning: unexpected node in {0}: {1}", this.mainDir + this.iproDbSpstFile, iproDbSpstReader.Name));
                 iproDbSpstReader.Read();
+                Console.WriteLine("End:" + iproDbSpstReader.Name);
+                if (iproDbSpstReader.EOF == true)
+                {
+                    Console.WriteLine("Done!");
+                    break;
+                }
             }
+            iproDbSpstReader.Close();
+            msmsReader.Close();
             modIproDbSpstWriter.Close();
         }
 
         private void ReadMsms(XmlReader msmsReader, XmlWriter modIproDbSpstWriter)
         {
-            int i = 0;
-            while (true)
-            {
-                
-                if (i < 7)
-                {
-                    Console.WriteLine(i);
-                    Console.WriteLine(msmsReader.Name);
-                    Console.WriteLine(msmsReader.NodeType);
-                    Console.WriteLine(msmsReader.AttributeCount);
-                }
-                i++;
+            //Reader setup
+            XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
+            msmsReader.Read(); //Jump to first node
 
-                if (msmsReader.Name == "msms_pipeline_analysis")
-                    continue;
-                /*
-                if (msmsReader.Name == "msms_run_summary")
+            while(true)
+            {
+                if (msmsReader.Name == "msms_run_summary") //itself
+                    msmsReader.Read();
+
+                if (msmsReader.Name == "spectrum_query")
                 {
-                    //get PSM spectrum query
+                    //FilterPsm(); //Do filter spectrum
+                    msmsReader.Skip();
+                    continue;
+                    //break; //for testing
+                }
+                
+                if (msmsReader.EOF == true)
+                {
+                    Console.WriteLine("msms reading done!");
                     break;
                 }
-                else if (msmsReader.Name != "")
+                else
                 {
                     Console.WriteLine(msmsReader.Name);
                     modIproDbSpstWriter.WriteNode(msmsReader, false);
-                    continue;
                 }
-                else
-                */
-                Console.WriteLine(msmsReader.NodeType);
-                msmsReader.Read();
-
             }
-            msmsReader.Close();
+        }
+
+        /// <summary>
+        /// Checks whether the current PSM meets any of the filtering conditions stored in the filter list object.
+        /// Then returns a boolean value to indicate whether it should be removed or not.
+        /// </summary>
+        /// <param name="psmName">Name for the current PSM</param>
+        /// <returns></returns>
+        private bool FilterPsm(string psmName)
+        {
+            return false;
         }
         
     }
