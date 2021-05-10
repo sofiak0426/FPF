@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Reflection;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -8,16 +8,9 @@ using ResultReader;
 
 namespace iproxml_filter
 {
-    //Define thread actions
 
     public class Actions
     {
-        public readonly string[] paramNames = {
-            "Database Iprophet Search File","Database + SpectraST Iprophet Search File","Output File",
-            "Channel Number","Reference Channel","Decoy Prefix", "Charge", "Mass", "Peptide Length",
-            "Intra-Peptide Euclidean Distance","Intra-Protein Euclidean Distance" };
-        public readonly object infoLock = new object(); //For adding a psm to the info list
-
         //Global Variables
         public string mainDir;
         public string iproDbFile;
@@ -26,16 +19,19 @@ namespace iproxml_filter
         public int channelCnt;
         public int refChan;
         public string decoyPrefix;
-        public float fdr001;
+        public float dbFdr001Prob;
+        public float dbSpstFdr001Prob;
 
         //Data storage
         public ds_DataContainer dataContainerObj;
-        public ds_PsmFilterParam filterListObj;
+        public ds_FilterParam filterParamObj;
+        List<string> result = new List<string> (); //for testing
+        int added = 0;
 
         /// <summary>
         /// Defines thread actions by specified id
         /// </summary>
-        public string DoWorkerJobs(int id)
+        public void DoWorkerJobs(int id)
         {
             switch (id)
             {
@@ -46,7 +42,6 @@ namespace iproxml_filter
                     this.ReadIproDbSpst();
                     break;
             }
-            return (String.Format("{0} Done", id));
         }
 
         /// <summary>
@@ -65,25 +60,28 @@ namespace iproxml_filter
             //Read parameters file
             this.mainDir = mainDir;
             this.dataContainerObj = new ds_DataContainer();
-            this.filterListObj = new ds_PsmFilterParam();
+            this.filterParamObj = new ds_FilterParam();
             this.ReadParamFile(this.mainDir + paramFile);
 
             List<int> workerIds = new List<int>{0,1};
-            Parallel.ForEach(workerIds, workerId =>
-            {
-                string result = this.DoWorkerJobs(workerId);
-                Console.WriteLine(result); //temporarily for testing
+            Parallel.ForEach(workerIds, workerId => {
+                this.DoWorkerJobs(workerId);
             });
 
-            CalEuDist();
-            
+            this.AddPsmInfo();
+            this.CalEuDist();
             this.FilterDbSpstIproFile();
+            /*
+            using StreamWriter f = new StreamWriter(this.mainDir + "test.txt"); 
+            foreach (string r in result)
+                f.WriteLine(r);
             return;
+            */
         }
 
         /// <summary>
-        /// Reads the parameter file line by line and modifies global variables.
-        /// Checks whether the parameter name for each line corresponds to the list paramNames.
+        /// Reads the parameter file line by line and checks whether the parameter name for each line corresponds to the correct 
+        /// parameter names. If correct, then modifies global variables.
         /// </summary>
         /// <param name="paramFile">Paramter file name</param>
         private void ReadParamFile(string paramFile)
@@ -102,93 +100,151 @@ namespace iproxml_filter
                 String[] lineElementsArr = line.Split(':');
                 lineElementsArr[1] = lineElementsArr[1].Trim(' ');
 
+                ParameterType correctParam = (ParameterType)lineCnt;
+                Parameters.parameterDic.TryGetValue(correctParam, out string correctParamStr); //Get the correct parameter string for this line
                 string errorCode = String.Format("Parameter error:" +
                     "Have you modified the parameter {0} to \"{1}\"?",
-                    paramNames[lineCnt - 1], lineElementsArr[0]);
+                    correctParamStr, lineElementsArr[0]);
 
                 //parameter names does not match default
-                if (lineElementsArr[0] != paramNames[lineCnt - 1])
+                if (lineElementsArr[0] != correctParamStr)
                     throw new ApplicationException(errorCode);
 
                 //if a feature filter is empty, skip the feature
                 if (lineCnt >= 7 && String.IsNullOrEmpty(lineElementsArr[1]))
                     continue;
-
-                switch (lineCnt)
+        
+                switch (correctParam)
                 {
-                    case 1: //Database Iprophet Search File:
+                    case ParameterType.DbIproFile: //Database Iprophet Search File:
                         this.iproDbFile = lineElementsArr[1];
                         break;
-                    case 2: //"Database + SpectraST Iprophet Search File"
+                    case ParameterType.DbSpstIproFile: //"Database + SpectraST Iprophet Search File"
                         this.iproDbSpstFile = lineElementsArr[1];
                         break;
-                    case 3:
+                    case ParameterType.OutputFile:
                         this.modIproDbSpstFile = lineElementsArr[1];
                         break;
-                    case 4: //Channel Number
+                    case ParameterType.ChannelNum: //Channel Number
                         int.TryParse(lineElementsArr[1], out this.channelCnt);
                         break;
-                    case 5: //Reference Channel
+                    case ParameterType.RefChan: //Reference Channel
                         int.TryParse(lineElementsArr[1], out this.refChan);
                         break;
-                    case 6:
+                    case ParameterType.DecoyPrefix:
                         this.decoyPrefix = lineElementsArr[1];
                         break;
-                    default: //for features
-                        if(this.AddFilters(lineCnt, lineElementsArr[1]) == false)
-                            throw new ApplicationException(errorCode);
+                    default: //Add feature
+                        if(this.AddFilters(correctParamStr, lineElementsArr[1]) == false)
+                            throw new ApplicationException("");
                         break;
                 }
             }
             paramFileReader.Close();
-            //this.filterListObj.PrintFilter(); //testing
             return;
         }
 
         /// <summary>
         /// Adds filter ranges for each feature, as specified by the user in the param file, to filter list for further use.
         /// </summary>
-        /// <param name="lineCnt"> Specify number of feature in the param name list</param>
-        /// <param name="filterStr">The string containing ranges of filters, which is read from the param file</param>
-        private bool AddFilters(int lineCnt, string filterStr)
+        /// <param name="feature"> Specify the feature name</param>
+        /// <param name="filterStr">The string containing ranges of filters, read from the param file</param>
+        private bool AddFilters(string feature, string filterStr)
         {
             String[] filterArr = filterStr.Split(',');
             foreach (string filter in filterArr)
             {
                 if (filter.Trim(' ').IndexOf('-') == -1)
-                    throw new ApplicationException(String.Format("Feature {0}: " +
-                        "You entered in the wrong filter format", paramNames[lineCnt - 1]));
+                    throw new ApplicationException(String.Format("Feature {0}: Wrong filter format", feature));
 
                 String[] filtLimArr = filter.Trim(' ').Split('-');
                 (double lowerLim, double upperLim) filtLim;
+                //Set up filter lower limit
                 if (filtLimArr[0] == String.Empty)
                     filtLim.lowerLim = Double.NegativeInfinity;
                 else
-                    double.TryParse(filtLimArr[0], out filtLim.lowerLim);
+                {
+                    try{
+                        double.TryParse(filtLimArr[0], out filtLim.lowerLim);
+                    }
+                    catch{
+                        throw new ApplicationException(String.Format("Feature {0}: Wrong lower limit format", feature));
+                    }
+                }
+                //Set up filter upper limit
                 if (filtLimArr[1] == String.Empty)
                     filtLim.upperLim = Double.PositiveInfinity;
                 else
-                    double.TryParse(filtLimArr[1], out filtLim.upperLim);
-
-                if (!this.filterListObj.AddFilter(paramNames[lineCnt - 1], filtLim))
-                    return false;
+                {
+                    try{
+                        double.TryParse(filtLimArr[1], out filtLim.upperLim);
+                    }
+                    catch{
+                        throw new ApplicationException(String.Format("Feature {0}: Wrong upper limit format", feature));
+                    }
+                }
+                this.filterParamObj.AddFilter(feature, filtLim);
             }
             return true;
         }
 
         /// <summary>
-        /// Parse PSM names that are in the database search iprophet file
+        /// Check whther the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR,
+        /// and no channel missing values) since only valid PSMs should be considered when filtering.
+        /// </summary>
+        private bool PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float Fdr001Prob)
+        {
+            //Ignore decoy proteins
+            if (prot.ProtID.StartsWith(decoyPrefix))
+                return false;
+            //Ignore psms with shared peptide
+            if (pep.b_IsUnique == false)
+                return false;
+            //Ignore psms with interprophet probability < 1% FDR probability
+            string keyScoreType = this.dataContainerObj.iproDbResult.GetKeyScoreStr();
+            Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
+            double psmScore = 0;
+            if (psmScoreDic.ContainsKey(keyScoreType))
+                psmScore = psmScoreDic[keyScoreType];
+            else //search hits with no iprophet score
+                return false;
+            if (psmScore < this.dbFdr001Prob)
+                return false;
+            //Ignore psms with no missing intensity value
+            List<double> psmIntenLi = new List<double>();
+            psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
+            if (psmIntenLi.Contains(0))
+                return false;
+            return true;
+        }
+        
+        /// <summary>
+        /// Parse PSMs in the database search iprophet file and select those which are valid
+        /// (probability > 1% fdr, not decoy, not shared peptide, without missing intensity values).
         /// </summary>
         private void ReadIproDb()
         {
-            using XmlReader IproDbReader = XmlReader.Create(this.mainDir + this.iproDbFile);
-            while (IproDbReader.Read())
+            PepXmlProtXmlReader iproDbReader = new PepXmlProtXmlReader();
+            this.dataContainerObj.iproDbResult = iproDbReader.ReadFiles(this.mainDir + this.iproDbFile, "",
+                XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
+
+            //get fdr < 1% probability
+            this.dbFdr001Prob = dataContainerObj.iproDbResult.GetPepMinProbForFDR(0.01f, "");
+
+            //Check PSM validity
+            foreach (KeyValuePair<string, ds_Protein> prot in this.dataContainerObj.iproDbResult.Protein_Dic)
             {
-                if (IproDbReader.NodeType != XmlNodeType.Element)
-                    continue;
-                if (IproDbReader.Name == "spectrum_query")
-                    this.dataContainerObj.dbPsmNameLi.Add(IproDbReader.GetAttribute("spectrum"));
+                foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
+                {
+                    foreach (ds_PSM psm in pep.Value.PsmList)
+                    {
+                        //If PSM is valid, add PSM name to the list
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.dbFdr001Prob))
+                            this.dataContainerObj.dbPsmNameLi.Add(psm.QueryNumber);
+                    }
+                }
             }
+
             Console.WriteLine("Finished database search iprophet parsing: {0:G}", this.dataContainerObj.dbPsmNameLi.Count);
             return;
         }
@@ -203,18 +259,40 @@ namespace iproxml_filter
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
             //get fdr < 1% probability
-            this.fdr001 = dataContainerObj.iproDbSpstResult.GetPepMinProbForFDR(0.01f, "");
+            this.dbSpstFdr001Prob = dataContainerObj.iproDbSpstResult.GetPepMinProbForFDR(0.01f, "");
         }
 
         /// <summary>
-        ///
+        ///For each PSM in the database + spectraST search iprophet file, 
+        ///collects feature values that are required for filtering to psmInfoDic.
         /// </summary>
         private void AddPsmInfo()
         {
-            
+            Console.WriteLine("Adding PSM information...");
+            foreach (KeyValuePair<string, ds_Protein> prot in this.dataContainerObj.iproDbSpstResult.Protein_Dic)
+            {
+                foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
+                {
+                    foreach (ds_PSM psm in pep.Value.PsmList)
+                    {
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.dbSpstFdr001Prob))
+                        {
+                            PsmInfo psmInfoObj = new PsmInfo(psm.Pep_exp_mass, psm.Charge, pep.Value.Sequence.Length);
+                            List<double> psmIntenLi = new List<double>();
+                            psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
+                            psmInfoObj.SetFeatureValue("Average Intensity", psmIntenLi.Average());
+                            this.dataContainerObj.dbSpstPsmInfoDic.Add(psm.QueryNumber, psmInfoObj);
+                        }
+                    }
+                }
+            }
         }
 
-        private List<double> CalRatio(List<double> intenLi) //calculate channel error of psms
+
+        /// <summary>
+        ///  calculate channel ratios of psms and returns a list 
+        /// </summary>
+        private List<double> CalRatio(List<double> intenLi)
         {
             List<double> ratioLi = new List<double>();
             for (int i = 0; i < channelCnt; i++)
@@ -227,6 +305,9 @@ namespace iproxml_filter
             return ratioLi;
         }
 
+        /// <summary>
+        /// Given channel ratios from a set of PSMs, then return a list containing PSMs' euclidean distance with other PSMs in the set
+        /// </summary>
         private List<double> GetEuDistFromRatio(List<List<double>> psmsRatioLi, List<double> psmsTotalRatioLi)
         {
             List<double> euDistLi = new List<double>();
@@ -244,7 +325,7 @@ namespace iproxml_filter
             //calculate euclidean for each psm
             for (int i = 0; i < psmsRatioLi.Count; i++)
             {
-                double dist = 0;
+                double dist = 0.0;
                 for (int j = 0; j < this.channelCnt - 1; j++)//For each channel
                 {
                     //avgOtherRatio: For a single channel, avg ratio of other PSMs (except the current PSM) in this protein
@@ -258,58 +339,44 @@ namespace iproxml_filter
             return euDistLi;
         }
 
+        /// <summary>
+        /// Calculates euclidean distance of all PSMs in the database+spectaST search iprophet file
+        /// </summary>
         private void CalEuDist()
         {
             foreach (KeyValuePair<string, ds_Protein> prot in dataContainerObj.iproDbSpstResult.Protein_Dic)
             {
                 //Lists for intra-protein euclidean distance 
-                List<string> psmsInProtNameLi = new List<string>(); //Store all names of PSMs in this protein
-                List<List<double>> psmsInProtRatioLi = new List<List<double>>(); //Store channel ratio of all PSMs in the protein
-                List<double> psmsInProtTotalRatioLi = new List<double>(); //Store channel ratio sum of all PSMs in the protein for further use
-                List<string> singlePsmPepNameLi = new List<string>(); //Store all names of PSMs in this protein
-                List<List<double>> singlePsmPepRatioLi = new List<List<double>>(); //Store channel ratio of all PSMs in the protein
-                List<double> singlePsmPepTotalRatioLi = new List<double>(); //Store channel ratio sum of all PSMs in the protein for further use
+                List<string> psmsInProtNameLi = new List<string>(); //Stores all names of PSMs in this protein
+                List<List<double>> psmsInProtRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in this protein
+                List<double> psmsInProtTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in this protein for further use
+                List<string> singlePsmPepNameLi = new List<string>(); //If peptide only contains a single PSM, store the PSM name here
+                List<List<double>> singlePsmPepRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in singlePsmPepNameLi
+                List<double> singlePsmPepTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in singlePsmPepNameLi
                 for (int i = 0; i < this.channelCnt - 1; i++)
                 {
                     psmsInProtTotalRatioLi.Add(0.0);
                     singlePsmPepTotalRatioLi.Add(0.0);
                 }
 
-                //Ignore decoy proteins
-                if (prot.Value.ProtID.StartsWith(decoyPrefix))
-                    continue;
-
                 foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
                 {
                     //Lists for intra-peptide euclidean distance
-                    List<string> psmsInPepNameLi = new List<string>();
-                    List<List<double>> psmsInPepRatioLi = new List<List<double>>();
-                    List<double> psmsInPepTotalRatioLi = new List<double>(); //Store channel ratio sum of all PSMs in the peptide for further use
+                    List<string> psmsInPepNameLi = new List<string>(); //Stores all names of PSMs in this peptide
+                    List<List<double>> psmsInPepRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in this peptide
+                    List<double> psmsInPepTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in this peptide for further use
                     for (int i = 0; i < this.channelCnt - 1; i++)
                         psmsInPepTotalRatioLi.Add(0.0);
 
-                    //Get psms that doesn't have a shared peptide
-                    if (pep.Value.b_IsUnique == false)
-                        continue;
-
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
-                        //Ignore psms with interprophet probability < 1% FDR probability
-                        string keyScoreType = this.dataContainerObj.iproDbSpstResult.GetKeyScoreStr();
-                        Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
-                        double psmScore = 0;
-                        if (psmScoreDic.ContainsKey(keyScoreType))
-                            psmScore = psmScoreDic[keyScoreType];
-                        else //search hits with no iprophet score
-                            continue;
-                        if (psmScore < this.fdr001)
+                        //Check PSM validity
+                        if (!PsmIsValid(psm, pep.Value, prot.Value, dbSpstFdr001Prob))
                             continue;
 
                         //get intensity and ratio
                         List<double> psmIntenLi = new List<double>();
                         psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
-                        if (psmIntenLi.Contains(0)) //Only get PSMs that has no missing intensity value
-                            continue;
                         List<double> psmRatioLi = CalRatio(psmIntenLi);
 
                         //Add name and ratio to peptide and protein lists
@@ -333,12 +400,8 @@ namespace iproxml_filter
                         intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
                         for (int i = 0; i < psmsInPepNameLi.Count; i++)
                         {
-                            if (!this.dataContainerObj.psmInfoDic.ContainsKey(psmsInPepNameLi[i])) // if the PSM is not added to dic yet
-                            {
-                                lock (infoLock)
-                                    this.dataContainerObj.psmInfoDic.Add(psmsInPepNameLi[i], new PsmInfo());
-                            }
-                            this.dataContainerObj.psmInfoDic[psmsInPepNameLi[i]].IntraPepEuDist = intraPepEuDistLi[i];
+                            this.dataContainerObj.dbSpstPsmInfoDic[psmsInPepNameLi[i]].SetFeatureValue("Intra-Peptide Euclidean Distance",
+                                intraPepEuDistLi[i]);
                         }
                     }
                     else //Add the PSM data to singlePsmPep 
@@ -354,24 +417,21 @@ namespace iproxml_filter
                 List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
                 for (int i = 0; i < psmsInProtNameLi.Count; i++)
                 {
-                    if (!this.dataContainerObj.psmInfoDic.ContainsKey(psmsInProtNameLi[i])) // if the PSM is not added to dic yet
-                    {
-                        lock(infoLock)
-                            this.dataContainerObj.psmInfoDic.Add(psmsInProtNameLi[i], new PsmInfo());
-                    }
-                    this.dataContainerObj.psmInfoDic[psmsInProtNameLi[i]].IntraProtEuDist = intraProtEuDistLi[i];
+                    this.dataContainerObj.dbSpstPsmInfoDic[psmsInProtNameLi[i]].SetFeatureValue("Intra-Protein Euclidean Distance",
+                        intraProtEuDistLi[i]);
                 }
 
                 //Calculate intra-peptide euclidean distance for peptides with only one PSM and store to dictionary
                 if (singlePsmPepNameLi.Count == 0)
                     continue;
                 else if (singlePsmPepNameLi.Count == 1)
-                    this.dataContainerObj.psmInfoDic[singlePsmPepNameLi[0]].IntraPepEuDist = 0;
+                    this.dataContainerObj.dbSpstPsmInfoDic[singlePsmPepNameLi[0]].SetFeatureValue("Intra-Peptide Euclidean Distance", 0.0);
                 else
                 {
                     List<double> singlePsmIntraPepEuDistLi = GetEuDistFromRatio(singlePsmPepRatioLi, singlePsmPepTotalRatioLi);
                     for (int i = 0; i < singlePsmPepNameLi.Count; i++)
-                        this.dataContainerObj.psmInfoDic[singlePsmPepNameLi[i]].IntraPepEuDist = singlePsmIntraPepEuDistLi[i];
+                        this.dataContainerObj.dbSpstPsmInfoDic[singlePsmPepNameLi[i]].SetFeatureValue("Intra-Peptide Euclidean Distance",
+                            singlePsmIntraPepEuDistLi[i]);
                 }
             }
             return;
@@ -405,7 +465,7 @@ namespace iproxml_filter
                     modIproDbSpstWriter.WriteNode(iproDbSpstReader, false);
                     continue;
                 }
-                else if (iproDbSpstReader.Name == "msms_pipeline_analysis") //read namespaces
+                else if (iproDbSpstReader.Name == "msms_pipeline_analysis" && iproDbSpstReader.NodeType == XmlNodeType.Element) //read namespaces
                 {
                     //Console.WriteLine(iproDbSpstReader.GetAttribute("date"));
                     //Console.WriteLine(iproDbSpstReader.GetAttribute("xmlns:xsi"));
@@ -416,6 +476,10 @@ namespace iproxml_filter
                     modIproDbSpstWriter.WriteAttributeString("xsi", "schemaLocation", iproDbSpstReader.GetAttribute("xmlns:xsi"), iproDbSpstReader.GetAttribute("xsi:schemaLocation"));
                     modIproDbSpstWriter.WriteAttributeString("summary_xml", iproDbSpstReader.GetAttribute("summary_xml"));
                 }
+                else if (iproDbSpstReader.Name == "msms_pipeline_analysis" && iproDbSpstReader.NodeType == XmlNodeType.EndElement)
+                {
+                    modIproDbSpstWriter.WriteEndElement();
+                }
                 else if (iproDbSpstReader.Name == "analysis_summary") //Other analysis summaries
                 {
                     modIproDbSpstWriter.WriteNode(iproDbSpstReader, false);
@@ -423,16 +487,19 @@ namespace iproxml_filter
                 }
                 else if (iproDbSpstReader.Name == "msms_run_summary") //Contain PSM information
                 {
+                    modIproDbSpstWriter.WriteStartElement(iproDbSpstReader.Name);
+                    modIproDbSpstWriter.WriteAttributes(iproDbSpstReader,false);
                     msmsReader = iproDbSpstReader.ReadSubtree();
                     ReadMsms(msmsReader, modIproDbSpstWriter);
-                    //iproDbSpstReader.Skip();
-                    //continue;
-                    break; //for testing
+                    modIproDbSpstWriter.WriteEndElement();
+                    iproDbSpstReader.Skip();
+                    continue;
+                    //break; //for testing
                 }
                 else
                     Console.WriteLine(String.Format("Warning: unexpected node in {0}: {1}", this.mainDir + this.iproDbSpstFile, iproDbSpstReader.Name));
-                iproDbSpstReader.Read();
                 Console.WriteLine("End:" + iproDbSpstReader.Name);
+                iproDbSpstReader.Read();
                 if (iproDbSpstReader.EOF == true)
                 {
                     Console.WriteLine("Done!");
@@ -455,25 +522,29 @@ namespace iproxml_filter
                 if (msmsReader.Name == "msms_run_summary") //itself
                     msmsReader.Read();
 
-                if (msmsReader.Name == "spectrum_query")
+                if (msmsReader.Name == "spectrum_query") //filter PSMs
                 {
-                    //FilterPsm(); //Do filter spectrum
-                    msmsReader.Skip();
+                    string psmName = msmsReader.GetAttribute("spectrum");
+                    if (FilterPsm(psmName) == false)
+                        modIproDbSpstWriter.WriteNode(msmsReader, false);
+                    else
+                        msmsReader.Skip();
                     continue;
-                    //break; //for testing
+                    //break; //for test                 
                 }
-                
+
                 if (msmsReader.EOF == true)
                 {
                     Console.WriteLine("msms reading done!");
                     break;
                 }
-                else
+                else //Other properties
                 {
                     Console.WriteLine(msmsReader.Name);
                     modIproDbSpstWriter.WriteNode(msmsReader, false);
                 }
             }
+            Console.WriteLine("One msms reading done!");
         }
 
         /// <summary>
@@ -484,6 +555,43 @@ namespace iproxml_filter
         /// <returns></returns>
         private bool FilterPsm(string psmName)
         {
+            //If the PSM need not to be considered (FDR too small / shared peptide / missing value / etc.)
+            if (!this.dataContainerObj.dbSpstPsmInfoDic.ContainsKey(psmName))
+            {
+                //Console.WriteLine(String.Format("{0}: PSM not here", psmName));
+                return false;
+            }
+
+            //Check whether the PSM is common (also in database search) or one of those added by spectraST
+            if (!this.dataContainerObj.dbPsmNameLi.Contains(psmName))
+            {
+                //Console.WriteLine(String.Format("{0}: Common PSM", psmName));
+                return false;
+            }
+            added++;
+            //Filtering for every feature
+            //Console.WriteLine(String.Format("{0}: added PSM", psmName));
+            this.dataContainerObj.dbSpstPsmInfoDic.TryGetValue(psmName, out PsmInfo psmInfoObj);
+            foreach (KeyValuePair<string,string> featAndType in ds_FilterParam.featAndTypeDic)
+            {
+                var featValue = 0.0;
+                //parse psmInfoObj to correct data type
+                if (featAndType.Value == "int")
+                    featValue = (int)psmInfoObj.GetFeatureValue(featAndType.Key);
+                else if (featAndType.Value == "double")
+                    featValue = (double) psmInfoObj.GetFeatureValue(featAndType.Key);
+
+                foreach ((double lowerLim, double upperLim) filtRange in this.filterParamObj.GetFiltRange(featAndType.Key))
+                {
+                    if ((featValue >= filtRange.lowerLim) && (featValue <= filtRange.upperLim))
+                    {
+                        Console.WriteLine(psmName + " " + featAndType.Key);
+                        Console.WriteLine(String.Format("{0},{1},{2}", featValue, filtRange.lowerLim, filtRange.upperLim));
+                        this.result.Add(psmName);
+                        return true;
+                    }
+                }
+            }      
             return false;
         }
         

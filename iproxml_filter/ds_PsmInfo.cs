@@ -6,56 +6,36 @@ namespace iproxml_filter
 {
     public class PsmInfo
     {
-        private double _mass;
-        private int _charge;
-        private int _peplen;
-        private double _avgInten;
-        private double _intraPepEuDist;
-        private double _intraProtEuDist;
+        private Dictionary<string, object> _featureValueDic = new Dictionary<string, object>();
 
         public PsmInfo() { }
 
         public PsmInfo(double mass, int charge,int peplen)
         {
-            this._mass = mass;
-            this._charge = charge;
-            this._peplen = peplen;
+            _featureValueDic.Add("Mass", mass);
+            _featureValueDic.Add("Charge",charge);
+            _featureValueDic.Add("Peptide Length", peplen);
         }
 
-        public double Mass
+        public Dictionary<string, object> FeatureValueDic
         {
-            get { return _mass; }
-            set { _mass = value; }
-        }
-        public int Charge
-        {
-            get { return _charge; }
-            set { _charge = value; }
+            get { return _featureValueDic; }
         }
 
-        public int Peplen
+        public object GetFeatureValue(string key)
         {
-            get { return _peplen; }
-            set { _peplen = value; }
-        }
- 
-        public double AvgInten
-        {
-            get { return _avgInten; }
-            set { _avgInten = value; }
+            return _featureValueDic[key];
         }
 
-        public double IntraPepEuDist
+        public void SetFeatureValue(string key, object value)
         {
-            get { return _intraPepEuDist; }
-            set { _intraPepEuDist = value; }
-        }
+            if (ds_FilterParam.featAndTypeDic.ContainsKey(key))
+                return;
 
-        public double IntraProtEuDist
-        {
-            get { return _intraProtEuDist; }
-            set { _intraProtEuDist = value; }
+            if (!_featureValueDic.ContainsKey(key))
+                _featureValueDic.Add(key, value);
+            else
+                _featureValueDic[key] = value;
         }
-
     }
 }
