@@ -4,6 +4,7 @@ using System.Text;
 
 namespace iproxml_filter
 {
+    //
     public enum ParameterType : int
     {
         DbIproFile = 1,

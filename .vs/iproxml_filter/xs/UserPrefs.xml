@@ -2,7 +2,11 @@
   <MonoDevelop.Ide.ItemProperties.iproxml__filter PreferredExecutionTarget="MonoDevelop.Default" />
   <MonoDevelop.Ide.Workbench ActiveDocument="iproxml_filter/Actions.cs">
     <Files>
-      <File FileName="iproxml_filter/Actions.cs" Line="28" Column="32" />
+      <File FileName="iproxml_filter/Actions.cs" Line="274" Column="10" />
+      <File FileName="iproxml_filter/Program.cs" Line="9" Column="30" />
+      <File FileName="iproxml_filter/ds_Filter.cs" Line="14" Column="15" />
+      <File FileName="iproxml_filter/ds_PsmInfo.cs" Line="9" Column="54" />
+      <File FileName="iproxml_filter/ds_Parameters.cs" Line="31" Column="30" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
