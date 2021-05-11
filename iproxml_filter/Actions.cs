@@ -194,7 +194,7 @@ namespace iproxml_filter
         /// Check whther the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR,
         /// and no channel missing values) since only valid PSMs should be considered when filtering.
         /// </summary>
-        private bool PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float Fdr001Prob)
+        private bool PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob)
         {
             //Ignore decoy proteins
             if (prot.ProtID.StartsWith(decoyPrefix))
@@ -203,14 +203,14 @@ namespace iproxml_filter
             if (pep.b_IsUnique == false)
                 return false;
             //Ignore psms with interprophet probability < 1% FDR probability
-            string keyScoreType = this.dataContainerObj.iproDbResult.GetKeyScoreStr();
+            string keyScoreType = "peptideprophet_result";
             Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
             double psmScore = 0;
             if (psmScoreDic.ContainsKey(keyScoreType))
                 psmScore = psmScoreDic[keyScoreType];
             else //search hits with no iprophet score
                 return false;
-            if (psmScore < Fdr001Prob)
+            if (psmScore < fdr001Prob)
                 return false;
             //Ignore psms with no missing intensity value
             List<double> psmIntenLi = new List<double>();
