@@ -29,7 +29,7 @@ namespace iproxml_filter
 
         public void SetFeatureValue(string key, object value)
         {
-            if (ds_FilterParam.featAndTypeDic.ContainsKey(key))
+            if (!ds_Filter.featAndTypeDic.ContainsKey(key))
                 return;
 
             if (!_featureValueDic.ContainsKey(key))

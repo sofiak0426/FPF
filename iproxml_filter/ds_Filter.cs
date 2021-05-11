@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace iproxml_filter
 {
-    public class ds_FilterParam //list for selected ranges for each feature
+    public class ds_Filter //list for selected ranges for each feature
     {
         public static readonly Dictionary <string, string> featAndTypeDic = new Dictionary<string, string>{
             {"Charge","int" }, 
