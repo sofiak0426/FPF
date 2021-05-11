@@ -24,7 +24,7 @@ namespace iproxml_filter
 
         //Data storage
         public ds_DataContainer dataContainerObj;
-        public ds_Filter filterParamObj;
+        public ds_Filter filterObj;
         List<string> result = new List<string> (); //for testing
         int added = 0;
 
@@ -60,7 +60,7 @@ namespace iproxml_filter
             //Read parameters file
             this.mainDir = mainDir;
             this.dataContainerObj = new ds_DataContainer();
-            this.filterParamObj = new ds_Filter();
+            this.filterObj = new ds_Filter();
             this.ReadParamFile(this.mainDir + paramFile);
 
             List<int> workerIds = new List<int>{0,1};
@@ -185,7 +185,7 @@ namespace iproxml_filter
                         throw new ApplicationException(String.Format("Feature {0}: Wrong upper limit format", feature));
                     }
                 }
-                this.filterParamObj.AddFilter(feature, filtLim);
+                this.filterObj.AddFilter(feature, filtLim);
             }
             return true;
         }
@@ -549,7 +549,7 @@ namespace iproxml_filter
                 else if (featAndType.Value == "double")
                     featValue = (double) psmInfoObj.GetFeatureValue(featAndType.Key);
 
-                foreach ((double lowerLim, double upperLim) filtRange in this.filterParamObj.GetFiltRange(featAndType.Key))
+                foreach ((double lowerLim, double upperLim) filtRange in this.filterObj.GetFiltRange(featAndType.Key))
                 {
                     if ((featValue >= filtRange.lowerLim) && (featValue <= filtRange.upperLim))
                     {
