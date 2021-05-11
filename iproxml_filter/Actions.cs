@@ -12,15 +12,15 @@ namespace iproxml_filter
     public class Actions
     {
         //Global Variables
-        public string mainDir;
-        public string iproDbFile;
-        public string iproDbSpstFile;
-        public string modIproDbSpstFile;
-        public int channelCnt;
-        public int refChan;
-        public string decoyPrefix;
-        public float dbFdr001Prob;
-        public float dbSpstFdr001Prob;
+        private string mainDir;
+        private string iproDbFile;
+        private string iproDbSpstFile;
+        private string modIproDbSpstFile;
+        private int channelCnt;
+        private int refChan;
+        private string decoyPrefix;
+        private float dbFdr001Prob;
+        private float dbSpstFdr001Prob;
 
         //Data storage
         public ds_DataContainer dataContainerObj;
