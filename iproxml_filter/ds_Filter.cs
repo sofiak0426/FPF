@@ -23,11 +23,11 @@ namespace iproxml_filter
             return _filtDic[key];
         }
 
-        public void AddFilter(string filtType, (double lowerLim, double upperLim) featlim)
+        public void AddFilter(string feature, (double lowerLim, double upperLim) featlim)
         {
-            if (!_filtDic.ContainsKey(filtType))  //if it is the first filter of the feature, create new dic item
-                this._filtDic.Add(filtType, new List<(double lowerLim, double upperLim)>());
-            _filtDic[filtType].Add(featlim);
+            if (!_filtDic.ContainsKey(feature))  //if it is the first filter of the feature, create new dic item
+                this._filtDic.Add(feature, new List<(double lowerLim, double upperLim)>());
+            _filtDic[feature].Add(featlim);
         }
     }
 

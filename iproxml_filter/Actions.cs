@@ -103,7 +103,7 @@ namespace iproxml_filter
                 lineElementsArr[1] = lineElementsArr[1].Trim(' ');
 
                 ParameterType correctParam = (ParameterType)lineCnt;
-                Parameters.parameterDic.TryGetValue(correctParam, out string correctParamStr); //Get the correct parameter string for this line
+                ds_Parameters.parameterDic.TryGetValue(correctParam, out string correctParamStr); //Get the correct parameter string for this line
                 string errorCode = String.Format("Parameter error:" +
                     "Have you modified the parameter {0} to \"{1}\"?",
                     correctParamStr, lineElementsArr[0]);
@@ -210,7 +210,7 @@ namespace iproxml_filter
                 psmScore = psmScoreDic[keyScoreType];
             else //search hits with no iprophet score
                 return false;
-            if (psmScore < this.dbFdr001Prob)
+            if (psmScore < Fdr001Prob)
                 return false;
             //Ignore psms with no missing intensity value
             List<double> psmIntenLi = new List<double>();
@@ -279,7 +279,7 @@ namespace iproxml_filter
                     {
                         if (!PsmIsValid(psm, pep.Value, prot.Value, this.dbSpstFdr001Prob))
                             continue;
-                        PsmInfo psmInfoObj = new PsmInfo(psm.Pep_exp_mass, psm.Charge, pep.Value.Sequence.Length);
+                        ds_PsmInfo psmInfoObj = new ds_PsmInfo(psm.Pep_exp_mass, psm.Charge, pep.Value.Sequence.Length);
                         List<double> psmIntenLi = new List<double>();
                         psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
                         psmInfoObj.SetFeatureValue("Average Intensity", psmIntenLi.Average());
@@ -539,7 +539,7 @@ namespace iproxml_filter
 
             //Filtering for every feature
             //Console.WriteLine(String.Format("{0}: added PSM", psmName));
-            this.dataContainerObj.dbSpstPsmInfoDic.TryGetValue(psmName, out PsmInfo psmInfoObj);
+            this.dataContainerObj.dbSpstPsmInfoDic.TryGetValue(psmName, out ds_PsmInfo psmInfoObj);
             foreach (KeyValuePair<string,string> featAndType in ds_Filter.featAndTypeDic)
             {
                 var featValue = 0.0;

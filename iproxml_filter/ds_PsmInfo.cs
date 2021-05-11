@@ -4,13 +4,13 @@ using System.Text;
 
 namespace iproxml_filter
 {
-    public class PsmInfo
+    public class ds_PsmInfo
     {
         private Dictionary<string, object> _featureValueDic = new Dictionary<string, object>();
 
-        public PsmInfo() { }
+        public ds_PsmInfo() { }
 
-        public PsmInfo(double mass, int charge,int peplen)
+        public ds_PsmInfo(double mass, int charge, int peplen)
         {
             _featureValueDic.Add("Mass", mass);
             _featureValueDic.Add("Charge",charge);

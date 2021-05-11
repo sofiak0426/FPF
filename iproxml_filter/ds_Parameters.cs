@@ -4,24 +4,24 @@ using System.Text;
 
 namespace iproxml_filter
 {
-    public static class Parameters
+    public enum ParameterType : int
     {
-        public enum ParameterType : int
-        {
-            DbIproFile = 1,
-            DbSpstIproFile = 2,
-            OutputFile = 3,
-            ChannelNum = 4,
-            RefChan = 5,
-            DecoyPrefix = 6,
-            Charge = 7,
-            Mass = 8,
-            PepLen = 9,
-            AvgInten = 10,
-            IntraPepEuDist = 11,
-            IntraProEuDist = 12
-        };
+        DbIproFile = 1,
+        DbSpstIproFile = 2,
+        OutputFile = 3,
+        ChannelNum = 4,
+        RefChan = 5,  
+        DecoyPrefix = 6,   
+        Charge = 7,    
+        Mass = 8,    
+        PepLen = 9, 
+        AvgInten = 10, 
+        IntraPepEuDist = 11,
+        IntraProEuDist = 12
+    };
 
+    public static class ds_Parameters
+    {
         public static readonly Dictionary<ParameterType, string> parameterDic = new Dictionary<ParameterType, string> {
             { ParameterType.DbIproFile,"Database Iprophet Search File" },
             { ParameterType.DbSpstIproFile , "Database + SpectraST Iprophet Search File" },
