@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 using ResultReader;
@@ -24,7 +24,7 @@ namespace iproxml_filter
 
         //Data storage
         public ds_DataContainer dataContainerObj;
-        public ds_Filter filterObj;
+        public ds_Filter filterParamObj;
         List<string> result = new List<string> (); //for testing
         int added = 0;
 
@@ -60,7 +60,7 @@ namespace iproxml_filter
             //Read parameters file
             this.mainDir = mainDir;
             this.dataContainerObj = new ds_DataContainer();
-            this.filterObj = new ds_Filter();
+            this.filterParamObj = new ds_Filter();
             this.ReadParamFile(this.mainDir + paramFile);
 
             List<int> workerIds = new List<int>{0,1};
@@ -102,7 +102,7 @@ namespace iproxml_filter
                 String[] lineElementsArr = line.Split(':');
                 lineElementsArr[1] = lineElementsArr[1].Trim(' ');
 
-                Parameters.ParameterType correctParam = (Parameters.ParameterType)lineCnt;
+                ParameterType correctParam = (ParameterType)lineCnt;
                 Parameters.parameterDic.TryGetValue(correctParam, out string correctParamStr); //Get the correct parameter string for this line
                 string errorCode = String.Format("Parameter error:" +
                     "Have you modified the parameter {0} to \"{1}\"?",
@@ -118,22 +118,22 @@ namespace iproxml_filter
         
                 switch (correctParam)
                 {
-                    case Parameters.ParameterType.DbIproFile: //Database Iprophet Search File:
+                    case ParameterType.DbIproFile: //Database Iprophet Search File:
                         this.iproDbFile = lineElementsArr[1];
                         break;
-                    case Parameters.ParameterType.DbSpstIproFile: //"Database + SpectraST Iprophet Search File"
+                    case ParameterType.DbSpstIproFile: //"Database + SpectraST Iprophet Search File"
                         this.iproDbSpstFile = lineElementsArr[1];
                         break;
-                    case Parameters.ParameterType.OutputFile:
+                    case ParameterType.OutputFile:
                         this.modIproDbSpstFile = lineElementsArr[1];
                         break;
-                    case Parameters.ParameterType.ChannelNum: //Channel Number
+                    case ParameterType.ChannelNum: //Channel Number
                         int.TryParse(lineElementsArr[1], out this.channelCnt);
                         break;
-                    case Parameters.ParameterType.RefChan: //Reference Channel
+                    case ParameterType.RefChan: //Reference Channel
                         int.TryParse(lineElementsArr[1], out this.refChan);
                         break;
-                    case Parameters.ParameterType.DecoyPrefix:
+                    case ParameterType.DecoyPrefix:
                         this.decoyPrefix = lineElementsArr[1];
                         break;
                     default: //Add feature
@@ -185,7 +185,7 @@ namespace iproxml_filter
                         throw new ApplicationException(String.Format("Feature {0}: Wrong upper limit format", feature));
                     }
                 }
-                this.filterObj.AddFilter(feature, filtLim);
+                this.filterParamObj.AddFilter(feature, filtLim);
             }
             return true;
         }
@@ -549,7 +549,7 @@ namespace iproxml_filter
                 else if (featAndType.Value == "double")
                     featValue = (double) psmInfoObj.GetFeatureValue(featAndType.Key);
 
-                foreach ((double lowerLim, double upperLim) filtRange in this.filterObj.GetFiltRange(featAndType.Key))
+                foreach ((double lowerLim, double upperLim) filtRange in this.filterParamObj.GetFiltRange(featAndType.Key))
                 {
                     if ((featValue >= filtRange.lowerLim) && (featValue <= filtRange.upperLim))
                     {
