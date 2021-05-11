@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 using ResultReader;
@@ -102,7 +102,7 @@ namespace iproxml_filter
                 String[] lineElementsArr = line.Split(':');
                 lineElementsArr[1] = lineElementsArr[1].Trim(' ');
 
-                ParameterType correctParam = (ParameterType)lineCnt;
+                Parameters.ParameterType correctParam = (Parameters.ParameterType)lineCnt;
                 Parameters.parameterDic.TryGetValue(correctParam, out string correctParamStr); //Get the correct parameter string for this line
                 string errorCode = String.Format("Parameter error:" +
                     "Have you modified the parameter {0} to \"{1}\"?",
@@ -118,22 +118,22 @@ namespace iproxml_filter
         
                 switch (correctParam)
                 {
-                    case ParameterType.DbIproFile: //Database Iprophet Search File:
+                    case Parameters.ParameterType.DbIproFile: //Database Iprophet Search File:
                         this.iproDbFile = lineElementsArr[1];
                         break;
-                    case ParameterType.DbSpstIproFile: //"Database + SpectraST Iprophet Search File"
+                    case Parameters.ParameterType.DbSpstIproFile: //"Database + SpectraST Iprophet Search File"
                         this.iproDbSpstFile = lineElementsArr[1];
                         break;
-                    case ParameterType.OutputFile:
+                    case Parameters.ParameterType.OutputFile:
                         this.modIproDbSpstFile = lineElementsArr[1];
                         break;
-                    case ParameterType.ChannelNum: //Channel Number
+                    case Parameters.ParameterType.ChannelNum: //Channel Number
                         int.TryParse(lineElementsArr[1], out this.channelCnt);
                         break;
-                    case ParameterType.RefChan: //Reference Channel
+                    case Parameters.ParameterType.RefChan: //Reference Channel
                         int.TryParse(lineElementsArr[1], out this.refChan);
                         break;
-                    case ParameterType.DecoyPrefix:
+                    case Parameters.ParameterType.DecoyPrefix:
                         this.decoyPrefix = lineElementsArr[1];
                         break;
                     default: //Add feature
