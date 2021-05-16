@@ -9,15 +9,15 @@ using ResultReader;
 namespace iproxml_filter
 {
 
-    public class Actions
+    public class FPFActions
     {
         //Global Variables
         private string mainDir;
         private string iproDbFile;
         private string iproDbSpstFile;
-        private string modIproDbSpstFile;
+        private string modIproDbSpstFile; //Output file name for the whole project
         private int channelCnt;
-        private int refChan;
+        private int refChannel;
         private string decoyPrefix;
         private float dbFdr001Prob;
         private float dbSpstFdr001Prob;
@@ -68,7 +68,7 @@ namespace iproxml_filter
                 this.DoWorkerJobs(workerId);
             });
 
-            this.AddPsmInfo();
+            this.CollectPsmFF_FromProtein_Dic();
             this.CalEuDist();
             this.FilterDbSpstIproFile();
             /*
@@ -100,7 +100,7 @@ namespace iproxml_filter
                 lineCnt++;
 
                 String[] lineElementsArr = line.Split(':');
-                lineElementsArr[1] = lineElementsArr[1].Trim(' ');
+                lineElementsArr[1] = lineElementsArr[1].Trim();
 
                 ParameterType correctParam = (ParameterType)lineCnt;
                 ds_Parameters.parameterDic.TryGetValue(correctParam, out string correctParamStr); //Get the correct parameter string for this line
@@ -131,7 +131,7 @@ namespace iproxml_filter
                         int.TryParse(lineElementsArr[1], out this.channelCnt);
                         break;
                     case ParameterType.RefChan: //Reference Channel
-                        int.TryParse(lineElementsArr[1], out this.refChan);
+                        int.TryParse(lineElementsArr[1], out this.refChannel);
                         break;
                     case ParameterType.DecoyPrefix:
                         this.decoyPrefix = lineElementsArr[1];
@@ -156,10 +156,10 @@ namespace iproxml_filter
             String[] filterArr = filterStr.Split(',');
             foreach (string filter in filterArr)
             {
-                if (filter.Trim(' ').IndexOf('-') == -1)
+                if (filter.Trim().IndexOf('-') == -1)
                     throw new ApplicationException(String.Format("Feature {0}: Wrong filter format", feature));
 
-                String[] filtLimArr = filter.Trim(' ').Split('-');
+                String[] filtLimArr = filter.Trim().Split('-');
                 (double lowerLim, double upperLim) filtLim;
                 //Set up filter lower limit
                 if (filtLimArr[0] == String.Empty)
@@ -191,8 +191,10 @@ namespace iproxml_filter
         }
 
         /// <summary>
+        /// Only valid PSMs should be considered when filtering.
         /// Check whther the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR,
-        /// and no channel missing values) since only valid PSMs should be considered when filtering.
+        /// and no channel missing values)
+        /// PSM with missing reporter ion is always invalid.
         /// </summary>
         private bool PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob)
         {
@@ -212,7 +214,7 @@ namespace iproxml_filter
                 return false;
             if (psmScore < fdr001Prob)
                 return false;
-            //Ignore psms with no missing intensity value
+            //Ignore psms with missing intensity value
             List<double> psmIntenLi = new List<double>();
             psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
             if (psmIntenLi.Contains(0))
@@ -243,7 +245,7 @@ namespace iproxml_filter
                     {
                         //If PSM is valid, add PSM name to the list
                         if (PsmIsValid(psm, pep.Value, prot.Value, this.dbFdr001Prob))
-                            this.dataContainerObj.dbPsmNameLi.Add(psm.QueryNumber);
+                            this.dataContainerObj.dbPsmIdLi.Add(psm.QueryNumber);
                     }
                 }
             }
@@ -268,7 +270,7 @@ namespace iproxml_filter
         ///For each PSM in the database + spectraST search iprophet file, 
         ///collects feature values that are required for filtering to psmInfoDic.
         /// </summary>
-        private void AddPsmInfo()
+        private void CollectPsmFF_FromProtein_Dic()
         {
             Console.WriteLine("Collecting PSM information...");
             foreach (KeyValuePair<string, ds_Protein> prot in this.dataContainerObj.iproDbSpstResult.Protein_Dic)
@@ -279,11 +281,11 @@ namespace iproxml_filter
                     {
                         if (!PsmIsValid(psm, pep.Value, prot.Value, this.dbSpstFdr001Prob))
                             continue;
-                        ds_PsmInfo psmInfoObj = new ds_PsmInfo(psm.Pep_exp_mass, psm.Charge, pep.Value.Sequence.Length);
+                        ds_Psm_ForFilter psmInfoObj = new ds_Psm_ForFilter(psm.Pep_exp_mass, psm.Charge, pep.Value.Sequence.Length);
                         List<double> psmIntenLi = new List<double>();
                         psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
                         psmInfoObj.SetFeatureValue("Average Intensity", psmIntenLi.Average());
-                        this.dataContainerObj.dbSpstPsmInfoDic.Add(psm.QueryNumber, psmInfoObj);
+                        this.dataContainerObj.dbSpstPsmFFDic.Add(psm.QueryNumber, psmInfoObj);
                     }
                 }
             }
@@ -297,9 +299,9 @@ namespace iproxml_filter
             List<double> ratioLi = new List<double>();
             for (int i = 0; i < channelCnt; i++)
             {
-                if (i + 1 == refChan) //skip reference channel
+                if (i + 1 == refChannel) //skip reference channel
                     continue;
-                double ratio = intenLi[i] / intenLi[refChan - 1];
+                double ratio = intenLi[i] / intenLi[refChannel - 1];
                 ratioLi.Add(Math.Round(ratio, 4));
             }
             return ratioLi;
@@ -401,7 +403,7 @@ namespace iproxml_filter
                         intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
                         for (int i = 0; i < psmsInPepNameLi.Count; i++)
                         {
-                            this.dataContainerObj.dbSpstPsmInfoDic[psmsInPepNameLi[i]].SetFeatureValue("Intra-Peptide Euclidean Distance",
+                            this.dataContainerObj.dbSpstPsmFFDic[psmsInPepNameLi[i]].SetFeatureValue("Intra-Peptide Euclidean Distance",
                                 intraPepEuDistLi[i]);
                         }
                     }
@@ -418,7 +420,7 @@ namespace iproxml_filter
                 List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
                 for (int i = 0; i < psmsInProtNameLi.Count; i++)
                 {
-                    this.dataContainerObj.dbSpstPsmInfoDic[psmsInProtNameLi[i]].SetFeatureValue("Intra-Protein Euclidean Distance",
+                    this.dataContainerObj.dbSpstPsmFFDic[psmsInProtNameLi[i]].SetFeatureValue("Intra-Protein Euclidean Distance",
                         intraProtEuDistLi[i]);
                 }
 
@@ -426,18 +428,21 @@ namespace iproxml_filter
                 if (singlePsmPepNameLi.Count == 0)
                     continue;
                 else if (singlePsmPepNameLi.Count == 1)
-                    this.dataContainerObj.dbSpstPsmInfoDic[singlePsmPepNameLi[0]].SetFeatureValue("Intra-Peptide Euclidean Distance", 0.0);
+                    this.dataContainerObj.dbSpstPsmFFDic[singlePsmPepNameLi[0]].SetFeatureValue("Intra-Peptide Euclidean Distance", 0.0);
                 else
                 {
                     List<double> singlePsmIntraPepEuDistLi = GetEuDistFromRatio(singlePsmPepRatioLi, singlePsmPepTotalRatioLi);
                     for (int i = 0; i < singlePsmPepNameLi.Count; i++)
-                        this.dataContainerObj.dbSpstPsmInfoDic[singlePsmPepNameLi[i]].SetFeatureValue("Intra-Peptide Euclidean Distance",
+                        this.dataContainerObj.dbSpstPsmFFDic[singlePsmPepNameLi[i]].SetFeatureValue("Intra-Peptide Euclidean Distance",
                             singlePsmIntraPepEuDistLi[i]);
                 }
             }
             return;
         }
-       
+
+        /// <summary>
+        /// Read database + spectraST search iprophet file, filter and write to new file
+        /// </summary>
         private void FilterDbSpstIproFile()
         {
             Console.WriteLine("Filtering database + spectraST iprophet file and writing to new iprophet...");
@@ -524,22 +529,23 @@ namespace iproxml_filter
         /// <summary>
         /// Checks whether the current PSM meets any of the filtering conditions stored in the filter list object.
         /// Then returns a boolean value to indicate whether it should be removed or not.
+        /// True: remove; False: keep
         /// </summary>
         /// <param name="psmName">Name for the current PSM</param>
         /// <returns></returns>
         private bool FilterPsm(string psmName)
         {
             //If the PSM need not to be considered (FDR too small / shared peptide / missing value / etc.)
-            if (!this.dataContainerObj.dbSpstPsmInfoDic.ContainsKey(psmName))
+            if (!this.dataContainerObj.dbSpstPsmFFDic.ContainsKey(psmName))
                 return false;
 
             //Check whether the PSM is common (also in database search) or one of those added by spectraST
-            if (!this.dataContainerObj.dbPsmNameLi.Contains(psmName))
+            if (!this.dataContainerObj.dbPsmIdLi.Contains(psmName))
                 return false;
 
             //Filtering for every feature
             //Console.WriteLine(String.Format("{0}: added PSM", psmName));
-            this.dataContainerObj.dbSpstPsmInfoDic.TryGetValue(psmName, out ds_PsmInfo psmInfoObj);
+            this.dataContainerObj.dbSpstPsmFFDic.TryGetValue(psmName, out ds_Psm_ForFilter psmInfoObj);
             foreach (KeyValuePair<string,string> featAndType in ds_Filter.featAndTypeDic)
             {
                 var featValue = 0.0;

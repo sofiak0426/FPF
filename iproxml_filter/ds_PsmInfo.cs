@@ -1,6 +1,6 @@
 ﻿namespace iproxml_filter
 {
-    public class ds_PsmInfo
+    public class ds_Psm_ForFilter
     {
         private int _charge;
         private double _mass;
@@ -9,9 +9,9 @@
         private double _intraPepEuDist;
         private double _intraProtEuDist;
 
-        public ds_PsmInfo() { }
+        public ds_Psm_ForFilter() { }
 
-        public ds_PsmInfo(double mass, int charge, int peplen)
+        public ds_Psm_ForFilter(double mass, int charge, int peplen)
         {
             this._mass = mass;
             this._charge = charge;

@@ -15,12 +15,12 @@ namespace iproxml_filter
             {"Intra-Protein Euclidean Distance", "double"}
         };
 
-        //Key: feature name; Value: filters for the feature
-        private Dictionary<string, List<(double lowerLim, double upperLim)>> _filtDic = new Dictionary<string, List<(double lowerLim, double upperLim)>>(); 
+        //Key: feature name; Value: filter ranges for the feature
+        private Dictionary<string, List<(double lowerLim, double upperLim)>> _filtDic = new Dictionary<string, List<(double lowerLim, double upperLim)>>();
 
-        public List<(double lowerLim, double upperLim)> GetFiltRange (string key)
+        public List<(double lowerLim, double upperLim)> GetFiltRange (string feature)
         {
-            return _filtDic[key];
+            return _filtDic[feature];
         }
 
         public void AddFilter(string feature, (double lowerLim, double upperLim) featlim)
