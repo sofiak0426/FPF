@@ -4,23 +4,18 @@ using System.Collections.Generic;
 
 namespace iproxml_filter
 {
-    public class ds_Filter //list for selected ranges for each feature
+
+    public class ds_Filters //list for selected ranges for each feature
     {
-        public static readonly Dictionary <string, string> featAndTypeDic = new Dictionary<string, string>{
-            {"Charge","int" }, 
-            {"Mass","double"}, 
-            {"Peptide Length","int"},
-            {"Average Intensity","double" },
-            {"Intra-Peptide Euclidean Distance" ,"double"},
-            {"Intra-Protein Euclidean Distance", "double"}
-        };
+        public readonly List<string> featureNameLi = new List<string> {"Charge", "Mass", "Peptide Length", "Average Intensity",
+        "Intra-Peptide Euclidean Distance", "Intra-Protein Euclidean Distance"};
 
         //Key: feature name; Value: filter ranges for the feature
         private Dictionary<string, List<(double lowerLim, double upperLim)>> _filtDic = new Dictionary<string, List<(double lowerLim, double upperLim)>>();
 
-        public List<(double lowerLim, double upperLim)> GetFiltRange (string feature)
+        public Dictionary<string, List<(double lowerLim, double upperLim)>> FiltDic
         {
-            return _filtDic[feature];
+            get { return _filtDic; }
         }
 
         public void AddFilter(string feature, (double lowerLim, double upperLim) featlim)

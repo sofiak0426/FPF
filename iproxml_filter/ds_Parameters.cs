@@ -4,38 +4,105 @@ using System.Text;
 
 namespace iproxml_filter
 {
-    //
-    public enum ParameterType : int
+    public class ds_Parameters
     {
-        DbIproFile = 1,
-        DbSpstIproFile = 2,
-        OutputFile = 3,
-        ChannelNum = 4,
-        RefChan = 5,  
-        DecoyPrefix = 6,   
-        Charge = 7,    
-        Mass = 8,    
-        PepLen = 9, 
-        AvgInten = 10, 
-        IntraPepEuDist = 11,
-        IntraProEuDist = 12
-    };
+        private string _iproDbFile;
+        private string _iproDbSpstFile;
+        private string _modIproDbSpstFile; //Output file name for the whole project
+        private int _channelCnt;
+        private int _refChannel;
+        private string _decoyPrefix;
+        private float _dbFdr001Prob;
+        private float _dbSpstFdr001Prob;
 
-    public static class ds_Parameters
-    {
-        public static readonly Dictionary<ParameterType, string> parameterDic = new Dictionary<ParameterType, string> {
-            { ParameterType.DbIproFile,"Database Iprophet Search File" },
-            { ParameterType.DbSpstIproFile , "Database + SpectraST Iprophet Search File" },
-            { ParameterType.OutputFile, "Output File" },
-            { ParameterType.ChannelNum, "Channel Number" },
-            { ParameterType.RefChan, "Reference Channel" },
-            { ParameterType.DecoyPrefix, "Decoy Prefix" },
-            { ParameterType.Charge, "Charge" },
-            { ParameterType.Mass, "Mass" },
-            { ParameterType.PepLen, "Peptide Length" },
-            { ParameterType.AvgInten, "Average Intensity" },
-            { ParameterType.IntraPepEuDist, "Intra-Peptide Euclidean Distance" },
-            { ParameterType.IntraProEuDist, "Intra-Protein Euclidean Distance"}
+        // Stores that whether the global parameter values is specified by user or not
+        private Dictionary<string, bool> _hasValueDic = new Dictionary<string, bool>{
+            {"Database Iprophet Search File", false},
+            {"Database + SpectraST Iprophet Search File", false},
+            {"Output File", false},
+            {"Channel Number", false},
+            {"Reference Channel", false},
+            {"Decoy Prefix", false},
         };
+
+        public string IproDbFile
+        {
+            get { return _iproDbFile; }
+            set { _iproDbFile = value; }
+        }
+        public string IproDbSpstFile
+        {
+            get { return _iproDbSpstFile; }
+            set { _iproDbSpstFile = value; }
+        }
+        public string ModIproDbSpstFile
+        {
+            get { return _modIproDbSpstFile; }
+            set { _modIproDbSpstFile = value; }
+        }
+        public int ChannelCnt
+        {
+            get { return _channelCnt; }
+            set { _channelCnt = value; }
+        }
+        public int RefChannel
+        {
+            get { return _refChannel; }
+            set { _refChannel = value; }
+        }
+        public string DecoyPrefix
+        {
+            get { return _decoyPrefix; }
+            set { _decoyPrefix = value; }
+        }
+        public float DbFdr001Prob
+        {
+            get { return _dbFdr001Prob; }
+            set { _dbFdr001Prob = value; }
+        }
+        public float DbSpstFdr001Prob
+        {
+            get { return _dbSpstFdr001Prob; }
+            set { _dbSpstFdr001Prob = value; }
+        }
+        /// <summary>
+        /// Check whether the current param name in the param file corresponds to one of the the correct param names in the dictionary.
+        /// True: param name is correct; False: there is no corresponding param name
+        /// </summary>
+        /// <param name="stringInParamFile"></param>
+        /// <returns></returns>
+        public bool SearchGlobalParams (string stringInParamFile)
+        {
+            return _hasValueDic.ContainsKey(stringInParamFile);
+        }
+
+        /// <summary>
+        /// If one parameter is correctly specified by user, change the item value (whose key is the parameter name) to true
+        /// </summary>
+        /// <param name="paramName"></param>
+        public void SetParam (string paramName)
+        {
+            _hasValueDic[paramName] = true;
+        }
+
+        public bool GetParam_HasValue(string paramName)
+        {
+            return _hasValueDic[paramName];
+        }
+
+        /// <summary>
+        /// Check whether all parameters in the dic are correctly specified by the user.
+        /// Then return a list containing all parameters names that are not specified.
+        /// </summary>
+        public List<string> CheckParamsSet()
+        {
+            List<string> missingParams = new List<string>();
+            foreach (KeyValuePair<string, bool> feature_hasValue in _hasValueDic)
+            {
+                if (feature_hasValue.Value == false)
+                    missingParams.Add(feature_hasValue.Key);
+            }
+            return missingParams;
+        }
     }
 }
