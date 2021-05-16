@@ -1,41 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace iproxml_filter
+﻿namespace iproxml_filter
 {
     public class ds_PsmInfo
     {
-        private Dictionary<string, object> _featureValueDic = new Dictionary<string, object>();
+        private int _charge;
+        private double _mass;
+        private int _peplen;
+        private double _avgInten;
+        private double _intraPepEuDist;
+        private double _intraProtEuDist;
 
         public ds_PsmInfo() { }
 
         public ds_PsmInfo(double mass, int charge, int peplen)
         {
-            _featureValueDic.Add("Mass", mass);
-            _featureValueDic.Add("Charge",charge);
-            _featureValueDic.Add("Peptide Length", peplen);
+            this._mass = mass;
+            this._charge = charge;
+            this._peplen = peplen;
         }
 
-        public Dictionary<string, object> FeatureValueDic
+        public int Charge
         {
-            get { return _featureValueDic; }
+            get { return _charge; }
+            set { _charge = value; }
         }
-
-        public object GetFeatureValue(string key)
+        public double Mass
         {
-            return _featureValueDic[key];
+            get { return _mass; }
+            set { _mass = value; }
         }
-
-        public void SetFeatureValue(string key, object value)
+        public int Peplen
         {
-            if (!ds_Filter.featAndTypeDic.ContainsKey(key))
-                return;
-
-            if (!_featureValueDic.ContainsKey(key))
-                _featureValueDic.Add(key, value);
-            else
-                _featureValueDic[key] = value;
+            get { return _peplen; }
+            set { _peplen = value; }
         }
+        public double AvgInten
+        {
+            get { return _avgInten; }
+            set { _avgInten = value; }
+        }
+        public double IntraPepEuDist
+        {
+            get { return _intraPepEuDist; }
+            set { _intraPepEuDist = value; }
+        }
+        public double IntraProtEuDist
+        {
+            get { return _intraProtEuDist; }
+            set { _intraProtEuDist = value; }
+        }
+
     }
 }
