@@ -108,8 +108,6 @@ namespace iproxml_filter
                 else if (filtersObj.featureNameLi.Contains(lineElementsArr[0])) { } //If the line specifies a filter, then continue
                 else //parameter name error
                     throw new ApplicationException(errorCode);
-                
-                //If the parameter is repeatedly specified
 
                 switch (lineElementsArr[0])
                 {
@@ -224,7 +222,7 @@ namespace iproxml_filter
                 return false;
             if (psmScore < fdr001Prob)
                 return false;
-            //Ignore psms with missing intensity value
+            //Ignore psms with any missing intensity value
             List<double> psmIntenLi = new List<double>();
             psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
             if (psmIntenLi.Contains(0))
