@@ -16,7 +16,7 @@ namespace iproxml_filter
         private float _dbSpstFdr001Prob;
 
         // Stores that whether the global parameter values is specified by user or not
-        private Dictionary<string, bool> _hasValueDic = new Dictionary<string, bool>{
+        private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
             {"Database Iprophet Search File", false},
             {"Database + SpectraST Iprophet Search File", false},
             {"Output File", false},
@@ -71,33 +71,33 @@ namespace iproxml_filter
         /// </summary>
         /// <param name="stringInParamFile"></param>
         /// <returns></returns>
-        public bool SearchGlobalParams (string stringInParamFile)
+        public bool ValidateParamDescription (string stringInParamFile)
         {
-            return _hasValueDic.ContainsKey(stringInParamFile);
+            return _paramIsSetDic.ContainsKey(stringInParamFile);
         }
 
         /// <summary>
         /// If one parameter is correctly specified by user, change the item value (whose key is the parameter name) to true
         /// </summary>
         /// <param name="paramName"></param>
-        public void SetParam (string paramName)
+        public void SetParamAsTrue (string paramName)
         {
-            _hasValueDic[paramName] = true;
+            _paramIsSetDic[paramName] = true;
         }
 
-        public bool GetParam_HasValue(string paramName)
+        public bool GetParamIsSet(string paramName)
         {
-            return _hasValueDic[paramName];
+            return _paramIsSetDic[paramName];
         }
 
         /// <summary>
         /// Check whether all parameters in the dic are correctly specified by the user.
         /// Then return a list containing all parameters names that are not specified.
         /// </summary>
-        public List<string> CheckParamsSet()
+        public List<string> CheckAllParamsSet()
         {
             List<string> missingParams = new List<string>();
-            foreach (KeyValuePair<string, bool> feature_hasValue in _hasValueDic)
+            foreach (KeyValuePair<string, bool> feature_hasValue in _paramIsSetDic)
             {
                 if (feature_hasValue.Value == false)
                     missingParams.Add(feature_hasValue.Key);

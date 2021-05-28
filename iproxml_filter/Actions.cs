@@ -93,13 +93,14 @@ namespace iproxml_filter
                     continue;
 
                 String[] lineElementsArr = line.Split(':');
+                lineElementsArr[0] = lineElementsArr[0].Trim();
                 lineElementsArr[1] = lineElementsArr[1].Trim();
 
                 string errorCode = String.Format("Parameter error:" +
                     "Have you modified the parameter to \"{0}\"?", lineElementsArr[0]);
-                if (parametersObj.SearchGlobalParams(lineElementsArr[0])) //If the line specifies a parameter
+                if (parametersObj.ValidateParamDescription(lineElementsArr[0])) //If the line specifies a parameter
                 {
-                    if(parametersObj.GetParam_HasValue(lineElementsArr[0]) == true)//Check whether the param is specified by the user already
+                    if(parametersObj.GetParamIsSet(lineElementsArr[0]) == true)//Check whether the param is specified by the user already
                     {
                         errorCode = String.Format("You have repeatedly specify the parameter \"{0}\"", lineElementsArr[0]);
                         throw new ApplicationException(errorCode);
@@ -135,10 +136,10 @@ namespace iproxml_filter
                         this.AddFilters(lineElementsArr[0], lineElementsArr[1]);
                         break;
                 }
-                parametersObj.SetParam(lineElementsArr[0]);
+                parametersObj.SetParamAsTrue(lineElementsArr[0]);
             }
             //Check if all the parameters are specified by the user
-            List<string> missingParams = parametersObj.CheckParamsSet();
+            List<string> missingParams = parametersObj.CheckAllParamsSet();
             string errorcode = "You didn't specify the values of the following parameters:\n";
             if (missingParams.Count > 0) //Some of the parameters are missing
             {
@@ -158,7 +159,7 @@ namespace iproxml_filter
         private void AddFilters(string feature, string filterStr)
         {
             //If the user did not specify filters of this feature
-            if (filterStr == "none")
+            if (filterStr.ToLower() == "none")
                 return;
 
             String[] filterArr = filterStr.Split(',');
