@@ -271,7 +271,7 @@ namespace iproxml_filter
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
             //get fdr < 1% probability
-            this.parametersObj.DbSpstFdr001Prob = dataContainerObj.iproDbSpstResult.GetPepMinProbForFDR(0.01f, "");
+            this.parametersObj.DbSpstFdr001Prob = this.dataContainerObj.iproDbSpstResult.GetPepMinProbForFDR(0.01f, "");
         }
 
         /// <summary>
@@ -406,7 +406,16 @@ namespace iproxml_filter
 
                     //Calculate intra-peptide euclidean distance and add to dictionary
                     List<double> intraPepEuDistLi = new List<double>();
-                    if (psmsInPepNameLi.Count != 1) //There are more than one psms in the list
+                    if (psmsInPepNameLi.Count == 0) //If there are no PSM in the list
+                        continue;
+                    else if (psmsInPepNameLi.Count == 1)  //Add the PSM data to singlePsmPep
+                    {
+                        singlePsmPepNameLi.Add(psmsInPepNameLi[0]);
+                        singlePsmPepRatioLi.Add(psmsInPepRatioLi[0]);
+                        for (int i = 0; i < this.parametersObj.ChannelCnt - 1; i++)
+                            singlePsmPepTotalRatioLi[i] += psmsInPepTotalRatioLi[i];
+                    }
+                    else  //There are more than one psms in the list
                     {
                         intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
                         for (int i = 0; i < psmsInPepNameLi.Count; i++)
@@ -414,17 +423,12 @@ namespace iproxml_filter
                             this.dataContainerObj.dbSpstPsmFFDic[psmsInPepNameLi[i]].IntraPepEuDist = intraPepEuDistLi[i];
                         }
                     }
-                    else //Add the PSM data to singlePsmPep 
-                    {
-                        singlePsmPepNameLi.Add(psmsInPepNameLi[0]);
-                        singlePsmPepRatioLi.Add(psmsInPepRatioLi[0]);
-                        for (int i = 0; i < this.parametersObj.ChannelCnt - 1; i++)
-                            singlePsmPepTotalRatioLi[i] += psmsInPepTotalRatioLi[i];
-                    }
                 }
 
                 //Calculate intra-protein euclidean distance and store to dictionary
                 List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
+                if (psmsInProtNameLi.Count == 0)
+                    continue;
                 for (int i = 0; i < psmsInProtNameLi.Count; i++)
                 {
                     this.dataContainerObj.dbSpstPsmFFDic[psmsInProtNameLi[i]].IntraProtEuDist = intraProtEuDistLi[i];
