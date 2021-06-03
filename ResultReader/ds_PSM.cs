@@ -156,7 +156,7 @@ namespace ResultReader
             set { _expectValue = value; }
         }
 
-        public Dictionary<int, double> Libra_ChanIntenDi
+        public Dictionary<int, double> libra_ChanIntenDi
         {
             get { return _libraChanIntenDi; }
             set { _libraChanIntenDi = value; }

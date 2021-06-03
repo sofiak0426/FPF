@@ -197,11 +197,11 @@ E:\SearchResultReader 2020-11-25\ResultReader\bin\Debug\NPOI.xml
 E:\SearchResultReader 2020-11-25\ResultReader\obj\Debug\ResultReader.csprojResolveAssemblyReference.cache
 E:\SearchResultReader 2020-11-25\ResultReader\obj\Debug\ResultReader.dll
 E:\SearchResultReader 2020-11-25\ResultReader\obj\Debug\ResultReader.pdb
-C:\iproxml_filter\ResultReader\bin\Debug\ResultReader.dll
-C:\iproxml_filter\ResultReader\bin\Debug\ResultReader.pdb
-C:\iproxml_filter\ResultReader\bin\Debug\NPOI.xml
-C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.csprojAssemblyReference.cache
-C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.csproj.CoreCompileInputs.cache
-C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.csproj.CopyComplete
-C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.dll
-C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.pdb
+E:\SearchResultReader 2021-03-28 libra\ResultReader\bin\Debug\ResultReader.dll
+E:\SearchResultReader 2021-03-28 libra\ResultReader\bin\Debug\ResultReader.pdb
+E:\SearchResultReader 2021-03-28 libra\ResultReader\bin\Debug\ICSharpCode.SharpZipLib.dll
+E:\SearchResultReader 2021-03-28 libra\ResultReader\bin\Debug\NPOI.dll
+E:\SearchResultReader 2021-03-28 libra\ResultReader\bin\Debug\NPOI.xml
+E:\SearchResultReader 2021-03-28 libra\ResultReader\obj\Debug\ResultReader.csprojResolveAssemblyReference.cache
+E:\SearchResultReader 2021-03-28 libra\ResultReader\obj\Debug\ResultReader.dll
+E:\SearchResultReader 2021-03-28 libra\ResultReader\obj\Debug\ResultReader.pdb

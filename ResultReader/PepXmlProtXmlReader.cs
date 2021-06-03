@@ -479,6 +479,25 @@ namespace ResultReader
                         }
                         break;
 
+                    //
+                    case "search_score_summary":
+                        XmlReader searchScoreSummaryReader = innerReaderLv1.ReadSubtree();
+                        searchScoreSummaryReader.MoveToContent();
+                        while (searchScoreSummaryReader.Read())
+                        {
+                            if (searchScoreSummaryReader.NodeType != XmlNodeType.Element)
+                                continue;
+
+                            if (searchScoreSummaryReader.Name == "parameter" && searchScoreSummaryReader.GetAttribute("name") != null)
+                            {
+                                scoreType = searchScoreSummaryReader.GetAttribute("name");
+                                scoreValue = (searchScoreSummaryReader.GetAttribute("value") != null) ? double.Parse(searchScoreSummaryReader.GetAttribute("value")) : -1.0;
+                                scoreDic.Add(scoreType, scoreValue);
+                            }
+                        }
+
+                        break;
+
                     case "peptideprophet_result":
                     case "interprophet_result":
                         scoreType = "peptideprophet_result";
@@ -518,7 +537,7 @@ namespace ResultReader
                             if (libraReader.Name == "intensity")
                             {
                                 if (int.TryParse(libraReader.GetAttribute("channel"), out channelNumber) && double.TryParse(libraReader.GetAttribute("normalized"), out libra_intensity))
-                                    psmObj.Libra_ChanIntenDi.Add(channelNumber, libra_intensity);
+                                    psmObj.libra_ChanIntenDi.Add(channelNumber, libra_intensity);
                             }                  
                         }
                         break;
