@@ -479,21 +479,21 @@ namespace ResultReader
                         }
                         break;
 
-                    //
+
                     case "search_score_summary":
                         XmlReader searchScoreSummaryReader = innerReaderLv1.ReadSubtree();
                         searchScoreSummaryReader.MoveToContent();
                         while (searchScoreSummaryReader.Read())
                         {
-                            if (searchScoreSummaryReader.NodeType != XmlNodeType.Element)
+                            if (searchScoreSummaryReader.NodeType != XmlNodeType.Element || searchScoreSummaryReader.Name != "parameter" || searchScoreSummaryReader.GetAttribute("name") == null)
                                 continue;
 
-                            if (searchScoreSummaryReader.Name == "parameter" && searchScoreSummaryReader.GetAttribute("name") != null)
-                            {
-                                scoreType = searchScoreSummaryReader.GetAttribute("name");
-                                scoreValue = (searchScoreSummaryReader.GetAttribute("value") != null) ? double.Parse(searchScoreSummaryReader.GetAttribute("value")) : -1.0;
+                            scoreType = searchScoreSummaryReader.GetAttribute("name");
+                            scoreValue = (searchScoreSummaryReader.GetAttribute("value") != null) ? double.Parse(searchScoreSummaryReader.GetAttribute("value")) : -1.0;
+                            if (!scoreDic.ContainsKey(scoreType))
                                 scoreDic.Add(scoreType, scoreValue);
-                            }
+                            else
+                                scoreDic[scoreType] = scoreValue;                                                           
                         }
 
                         break;

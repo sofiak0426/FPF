@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Globalization;
 using ResultReader;
 
 namespace iproxml_filter
@@ -14,11 +15,14 @@ namespace iproxml_filter
         private string mainDir;
 
         //Data storage
-        public ds_Parameters parametersObj;
-        public ds_DataContainer dataContainerObj;
-        public ds_Filters filtersObj;
-        List<string> result = new List<string> (); //for testing
-        int added = 0;//for testing
+        private ds_Parameters parametersObj;
+        private ds_DataContainer dataContainerObj;
+        private ds_Filters filtersObj;
+        private List<string> logFileLines;
+        private string logFile;
+        //List<string> result = new List<string> (); //for testing
+        //int added = 0;//for testing
+        int remove = 0;//for testing, how many PSMs are filtered out
 
         /// <summary>
         /// Defines thread actions by specified id
@@ -49,11 +53,14 @@ namespace iproxml_filter
         ///
         public void MainActions(string mainDir, string paramFile)
         {
-            //Read parameters file
+            //Initialization
             this.mainDir = mainDir;
             this.dataContainerObj = new ds_DataContainer();
             this.filtersObj = new ds_Filters();
             this.parametersObj = new ds_Parameters();
+            this.logFileLines = new List<string>();
+
+            //Read parameters file
             this.ReadParamFile(this.mainDir + paramFile);
 
             List<int> workerIds = new List<int>{0,1};
@@ -69,9 +76,10 @@ namespace iproxml_filter
             foreach (string r in result)
                 f.WriteLine(r);
             */
+            logFile = GetLogFileName();
+            File.WriteAllLines(this.mainDir + logFile, logFileLines);
             Console.WriteLine("Done!");
-            return;
-           
+            return;       
         }
 
         /// <summary>
@@ -225,7 +233,7 @@ namespace iproxml_filter
                 return false;
             //Ignore psms with any missing intensity value
             List<double> psmIntenLi = new List<double>();
-            psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
+            psmIntenLi.AddRange(psm.libra_ChanIntenDi.Values);
             if (psmIntenLi.Contains(0))
                 return false;
             return true;
@@ -290,9 +298,34 @@ namespace iproxml_filter
                     {
                         if (!PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob))
                             continue;
-                        ds_Psm_ForFilter psmInfoObj = new ds_Psm_ForFilter(psm.Pep_exp_mass, psm.Charge, pep.Value.Sequence.Length);
+                        Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
+                        Dictionary<string, double> spstScoreDic = new Dictionary<string, double>(); //Store scores specific for SpectraST
+                        List<string> scoreNames = new List<string> { "dot", "delta", "precursor_mz_diff", "hits_num",
+                            "hits_mean", "hits_stdev", "fval" };
+                        foreach (string scoreName in scoreNames)
+                        {
+                            if (psmScoreDic.ContainsKey(scoreName)) //For Spectrast-added PSMs
+                                spstScoreDic.Add(scoreName, psmScoreDic[scoreName]);
+                            else //For PSMs without spectraST features
+                                spstScoreDic.Add(scoreName, (double)-10000);
+                        }
+                        ds_Psm_ForFilter psmInfoObj = new ds_Psm_ForFilter(
+                            psm.Pep_exp_mass, //Mass
+                            psm.Charge, //Charge
+                            pep.Value.Sequence.Length, //Peptide length
+                            pep.Value.ModPosList.Count, //PTM count
+                            (double)pep.Value.ModPosList.Count / pep.Value.Sequence.Length, //PTM ratio
+                            Math.Abs(psm.MassError), //Absolute Mass Difference
+                            Math.Abs(spstScoreDic["precursor_mz_diff"]), //Absolute Precursor Mz Difference
+                            spstScoreDic["dot"], //Dot Product
+                            spstScoreDic["delta"], //Delta Score
+                            spstScoreDic["hits_num"], //Hits Num
+                            spstScoreDic["hits_mean"], //Hits Mean
+                            spstScoreDic["hits_stdev"], //Hits Standard Deviation
+                            spstScoreDic["fval"] //f-value
+                            );
                         List<double> psmIntenLi = new List<double>();
-                        psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
+                        psmIntenLi.AddRange(psm.libra_ChanIntenDi.Values);
                         psmInfoObj.AvgInten = psmIntenLi.Average();
                         this.dataContainerObj.dbSpstPsmFFDic.Add(psm.QueryNumber, psmInfoObj);
                     }
@@ -388,7 +421,7 @@ namespace iproxml_filter
 
                         //get intensity and ratio
                         List<double> psmIntenLi = new List<double>();
-                        psmIntenLi.AddRange(psm.Libra_ChanIntenDi.Values);
+                        psmIntenLi.AddRange(psm.libra_ChanIntenDi.Values);
                         List<double> psmRatioLi = CalRatio(psmIntenLi);
 
                         //Add name and ratio to peptide and protein lists
@@ -553,7 +586,7 @@ namespace iproxml_filter
             if (this.dataContainerObj.dbPsmIdLi.Contains(psmName))
                 return false;
 
-            this.added ++;
+            //this.added ++;
             //Filtering for every feature
             //Console.WriteLine(String.Format("{0}: added PSM", psmName));
             this.dataContainerObj.dbSpstPsmFFDic.TryGetValue(psmName, out ds_Psm_ForFilter psmInfoObj);
@@ -580,21 +613,71 @@ namespace iproxml_filter
                     case "Intra-Protein Euclidean Distance":
                         featValue = psmInfoObj.IntraProtEuDist;
                         break;
+                    case "Number of PTMs":
+                        featValue = psmInfoObj.PtmCount;
+                        break;
+                    case "PTM Ratio":
+                        featValue = psmInfoObj.PtmRatio;
+                        break;
+                    case "Absolute Mass Difference":
+                        featValue = psmInfoObj.AbsMassDiff;
+                        break;
+                    case "Absolute Precursor Mz Difference":
+                        featValue = psmInfoObj.AbsPrecursorMzDiff;
+                        break;
+                    case "Dot Product":
+                        featValue = psmInfoObj.DotProduct;
+                        break;
+                    case "DeltaD":
+                        featValue = psmInfoObj.DeltaScore;
+                        break;
+                    case "Number of Hits":
+                        featValue = psmInfoObj.HitsNum;
+                        break;
+                    case "Mean of Dot Products of the Hits":
+                        featValue = psmInfoObj.HitsMean;
+                        break;
+                    case "Standard Deviation of Dot Products of the Hits":
+                        featValue = psmInfoObj.HitsStdev;
+                        break;
+                    case "F-value":
+                        featValue = psmInfoObj.Fval;
+                        break;
                     default:
                         throw new ApplicationException(String.Format("Feature name error:{0}",filtsForOneFeat.Key));
                 }
 
                 foreach ((double lowerLim, double upperLim) filtRange in filtsForOneFeat.Value)
                 {
-                    if ((featValue >= filtRange.lowerLim) && (featValue <= filtRange.upperLim))
+                    if (featValue == -10000) //In some PSMS, there may be some SpectraST features not written in iprophet file
+                    {
+                        this.logFileLines.Add(psmName + "\n");
+                        break;
+                    }
+                    if ((featValue >= filtRange.lowerLim) && (featValue < filtRange.upperLim))
                     {
                         //this.result.Add(psmName);
+                        this.remove++;
                         return true;
                     }
                 }
             }      
             return false;
         }
-        
+
+        /// <summary>
+        /// Organize the correct format for the log file.
+        /// Final format: DD-MM-YYYY_HH-MM-SS_log
+        /// </summary>
+        /// <returns></returns>
+        private string GetLogFileName()
+        {
+            string curTime = DateTime.Now.ToString(new CultureInfo("en-GB"));
+            curTime = curTime.Replace('/','-');
+            curTime = curTime.Replace(':', '-');
+            curTime = curTime.Replace(' ', '_');
+            curTime += "_log.txt";
+            return curTime;
+        }
     }
 }
