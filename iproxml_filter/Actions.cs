@@ -58,7 +58,7 @@ namespace iproxml_filter
             this.dataContainerObj = new ds_DataContainer();
             this.filtersObj = new ds_Filters();
             this.parametersObj = new ds_Parameters();
-            this.logFileLines = new List<string>();
+            this.logFileLines = new List<string>() { "Warning: PSMs taken into account by feature filter but with missing Spectrast feature values"};
 
             //Read parameters file
             this.ReadParamFile(this.mainDir + paramFile);
@@ -78,6 +78,8 @@ namespace iproxml_filter
             */
             logFile = GetLogFileName();
             File.WriteAllLines(this.mainDir + logFile, logFileLines);
+            if(logFileLines.Count != 1)
+                logFileLines.ForEach(line => Console.WriteLine("{0}", line));
             Console.WriteLine("Done!");
             return;       
         }
@@ -667,7 +669,7 @@ namespace iproxml_filter
 
         /// <summary>
         /// Organize the correct format for the log file.
-        /// Final format: DD-MM-YYYY_HH-MM-SS_log
+        /// Final format: warning_DD-MM-YYYY_HH-MM-SS
         /// </summary>
         /// <returns></returns>
         private string GetLogFileName()
@@ -676,8 +678,8 @@ namespace iproxml_filter
             curTime = curTime.Replace('/','-');
             curTime = curTime.Replace(':', '-');
             curTime = curTime.Replace(' ', '_');
-            curTime += "_log.txt";
-            return curTime;
+            string message = String.Format("warning_{0}.txt", curTime);
+            return message;
         }
     }
 }
