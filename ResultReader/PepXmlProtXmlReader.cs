@@ -332,6 +332,7 @@ namespace ResultReader
         {
             ds_PSM shared_psmObj = new ds_PSM(this.searchResultObj.Source);    //a query share some PSM parameters
             this.Read_PsmInfo(queryXmlReader, shared_psmObj);     // 20170509 從<spectrum_query (#$&)#(*& >取得一些資訊放到shared_psmObj，作為所有search_hits的psmObj的基礎
+            Dictionary<string, double> shared_scoreDic = null;
 
             // get "search_hit" Node     // 20170509 僅在找到search_hit時開始動作
             while (queryXmlReader.Read())
@@ -346,10 +347,13 @@ namespace ResultReader
                 ds_Protein protObj = new ds_Protein();
                 ds_Peptide pepObj = new ds_Peptide();
 
-                this.Read_peptideInfo(queryXmlReader, pepObj, psmObj, protObj); //read protein and peptide
+                this.Read_peptideInfo(queryXmlReader, pepObj, psmObj, protObj, shared_scoreDic); //read protein and peptide
                 if (psmObj.Rank > 1)
                     continue;
 
+                shared_psmObj.libra_ChanIntenDi = new Dictionary<int,double>(psmObj.libra_ChanIntenDi);
+                shared_scoreDic = new Dictionary<string, double>((Dictionary<string, double>)psmObj.Score);
+                //shared_psmObj.Score = psmObj.Score;
                 //this.Interact_calcInfo(pepObj, psmObj);
 
                 //copy Objs if alternative protein exists in pepXML
@@ -392,7 +396,7 @@ namespace ResultReader
         }
 
         //read peptide data
-        private void Read_peptideInfo(XmlReader pepReader, ds_Peptide pepObj, ds_PSM psmObj, ds_Protein protObj)
+        private void Read_peptideInfo(XmlReader pepReader, ds_Peptide pepObj, ds_PSM psmObj, ds_Protein protObj, Dictionary<string, double> shared_scoreDic)
         {
             psmObj.Rank = (pepReader.GetAttribute("hit_rank") != null) ? int.Parse(pepReader.GetAttribute("hit_rank")) : 0;
             pepObj.PrevAA = (pepReader.GetAttribute("peptide_prev_aa") != null) ? pepReader.GetAttribute("peptide_prev_aa") : "";
@@ -410,10 +414,10 @@ namespace ResultReader
 
             XmlReader innerReaderLv1 = pepReader.ReadSubtree();
             innerReaderLv1.MoveToContent();
-            Dictionary<string, double> scoreDic = new Dictionary<string, double>(); //key: Score type, value: Score value
-
+            Dictionary<string, double> scoreDic = shared_scoreDic == null ? new Dictionary<string, double>() : shared_scoreDic; //key: Score type, value: Score value
+                                                // 20210616 如果有提供shared_scoreDic、則使用之；不然就用空的dictionary
             if (this.searchResultObj.Source != SearchResult_Source.Mayu) //initial score Object
-                psmObj.Score = scoreDic;
+                psmObj.Score = scoreDic;   
 
             while (innerReaderLv1.Read())
             {
@@ -469,8 +473,9 @@ namespace ResultReader
                             case SearchResult_Source.XTandem_PepXml:    //KeyScore: hyperscore
                             case SearchResult_Source.TPP_PepXml:        //KeyScore: peptideprophet_result
                             case SearchResult_Source.PD_Percolator_PepXml:
-                                if (!scoreDic.ContainsKey(scoreType))  //protect
-                                    scoreDic.Add(scoreType, scoreValue);
+                                if (!scoreDic.ContainsKey(scoreType))  //protect 20210616改為新增一個key但value為-1(bb)
+                                    scoreDic.Add(scoreType, bb);
+                                scoreDic[scoreType] = scoreValue;      //        20210616然後再把scoreValue填進該key對應的value
                                 break;
 
                             case SearchResult_Source.Mayu:  //meaningful Petide's Prob is obtain from Mayu csv

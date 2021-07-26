@@ -20,9 +20,11 @@ namespace iproxml_filter
         private ds_Filters filtersObj;
         private List<string> logFileLines;
         private string logFile;
+        int notSingleHitCnt = 0;
+        int noSpstFeatCnt = 0;
         //List<string> result = new List<string> (); //for testing
-        //int added = 0;//for testing
-        int remove = 0;//for testing, how many PSMs are filtered out
+        int added = 0;//for testing
+        int filtered = 0;//for testing, how many PSMs are filtered out
 
         /// <summary>
         /// Defines thread actions by specified id
@@ -58,7 +60,7 @@ namespace iproxml_filter
             this.dataContainerObj = new ds_DataContainer();
             this.filtersObj = new ds_Filters();
             this.parametersObj = new ds_Parameters();
-            this.logFileLines = new List<string>() { "Warning: PSMs taken into account by feature filter but with missing Spectrast feature values"};
+            this.logFileLines = new List<string>() {"Warning: PSM with more than one hit:"};
 
             //Read parameters file
             this.ReadParamFile(this.mainDir + paramFile);
@@ -78,9 +80,7 @@ namespace iproxml_filter
             */
             logFile = GetLogFileName();
             File.WriteAllLines(this.mainDir + logFile, logFileLines);
-            if(logFileLines.Count != 1)
-                logFileLines.ForEach(line => Console.WriteLine("{0}", line));
-            Console.WriteLine("Done!");
+            Console.WriteLine(String.Format("Done! Examined PSMs:{0}, Filtered PSMS:{1}", added, filtered));
             return;       
         }
 
@@ -140,7 +140,9 @@ namespace iproxml_filter
                         this.parametersObj.RefChannel = refChannel;
                         break;
                     case "Decoy Prefix":
-                        this.parametersObj.DecoyPrefix = lineElementsArr[1];
+                        this.parametersObj.DecoyPrefixArr = lineElementsArr[1].Split(',');
+                        foreach (string decoyPrefix in this.parametersObj.DecoyPrefixArr)
+                            decoyPrefix.Trim();
                         break;
                     default: //Add feature
                         this.AddFilters(lineElementsArr[0], lineElementsArr[1]);
@@ -218,8 +220,11 @@ namespace iproxml_filter
         private bool PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob)
         {
             //Ignore decoy proteins
-            if (prot.ProtID.StartsWith(this.parametersObj.DecoyPrefix))
-                return false;
+            foreach (string decoyPrefix in this.parametersObj.DecoyPrefixArr)
+            {
+                if (prot.ProtID.StartsWith(decoyPrefix))
+                    return false;
+            }
             //Ignore psms with shared peptide
             if (pep.b_IsUnique == false)
                 return false;
@@ -329,10 +334,20 @@ namespace iproxml_filter
                         List<double> psmIntenLi = new List<double>();
                         psmIntenLi.AddRange(psm.libra_ChanIntenDi.Values);
                         psmInfoObj.AvgInten = psmIntenLi.Average();
-                        this.dataContainerObj.dbSpstPsmFFDic.Add(psm.QueryNumber, psmInfoObj);
+                        try
+                        {
+                            this.dataContainerObj.dbSpstPsmFFDic.Add(psm.QueryNumber, psmInfoObj);
+                        }
+                        catch
+                        {
+                            this.logFileLines.Add(psm.QueryNumber);
+                            this.notSingleHitCnt++;
+                        }
                     }
                 }
             }
+            //Write the total count of PSMs with more than one hit into log file
+            this.logFileLines.Add(String.Format("{0} at total.", this.notSingleHitCnt));
         }
 
         /// <summary>
@@ -491,6 +506,7 @@ namespace iproxml_filter
         private void FilterDbSpstIproFile()
         {
             Console.WriteLine("Filtering database + spectraST iprophet file and writing to new iprophet...");
+            this.logFileLines.Add("Warning: PSMs taken into account by feature filter but with missing Spectrast feature values");
             //Xml reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
             XmlReader iproDbSpstReader = XmlReader.Create(String.Format("{0}{1}",this.mainDir, this.parametersObj.IproDbSpstFile), readerSettings);
@@ -538,6 +554,9 @@ namespace iproxml_filter
                 if (iproDbSpstReader.EOF == true)
                     break;
             }
+            //Write number of PSMs that are considered by FPF but without SpectraST features into log file
+            this.logFileLines.Add(String.Format("{0} at total.", this.noSpstFeatCnt));
+            
             iproDbSpstReader.Close();
             msmsRunReader.Close();
             modIproDbSpstWriter.Close();
@@ -588,7 +607,7 @@ namespace iproxml_filter
             if (this.dataContainerObj.dbPsmIdLi.Contains(psmName))
                 return false;
 
-            //this.added ++;
+            this.added ++;
             //Filtering for every feature
             //Console.WriteLine(String.Format("{0}: added PSM", psmName));
             this.dataContainerObj.dbSpstPsmFFDic.TryGetValue(psmName, out ds_Psm_ForFilter psmInfoObj);
@@ -654,12 +673,13 @@ namespace iproxml_filter
                     if (featValue == -10000) //In some PSMS, there may be some SpectraST features not written in iprophet file
                     {
                         this.logFileLines.Add(psmName + "\n");
+                        this.noSpstFeatCnt++;
                         break;
                     }
                     if ((featValue >= filtRange.lowerLim) && (featValue < filtRange.upperLim))
                     {
                         //this.result.Add(psmName);
-                        this.remove++;
+                        this.filtered++;
                         return true;
                     }
                 }

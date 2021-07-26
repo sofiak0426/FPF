@@ -11,7 +11,7 @@ namespace iproxml_filter
         private string _modIproDbSpstFile; //Output file name for the whole project
         private int _channelCnt;
         private int _refChannel;
-        private string _decoyPrefix;
+        private string[] _decoyPrefixArr;
         private float _dbFdr001Prob;
         private float _dbSpstFdr001Prob;
 
@@ -50,10 +50,10 @@ namespace iproxml_filter
             get { return _refChannel; }
             set { _refChannel = value; }
         }
-        public string DecoyPrefix
+        public string[] DecoyPrefixArr
         {
-            get { return _decoyPrefix; }
-            set { _decoyPrefix = value; }
+            get { return _decoyPrefixArr; }
+            set { _decoyPrefixArr = value; }
         }
         public float DbFdr001Prob
         {
