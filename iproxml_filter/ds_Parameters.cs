@@ -14,6 +14,8 @@ namespace iproxml_filter
         private string[] _decoyPrefixArr;
         private float _dbFdr001Prob;
         private float _dbSpstFdr001Prob;
+        private List<double> _bgNormRatioLi = new List<double>(); //Intensity normalization ratio
+        private List<string> _bgProtNameLi = new List<string>();
 
         // Stores that whether the global parameter values is specified by user or not
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
@@ -23,6 +25,7 @@ namespace iproxml_filter
             {"Channel Number", false},
             {"Reference Channel", false},
             {"Decoy Prefix", false},
+            {"Background Keywords for Normalization", false}
         };
 
         public string IproDbFile

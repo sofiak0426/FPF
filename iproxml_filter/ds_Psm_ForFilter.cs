@@ -2,12 +2,13 @@
 {
     public class ds_Psm_ForFilter
     {
+        private string _protName;
         private int _charge;
         private double _mass;
         private int _peplen;
-        private double _avgInten;
-        private double _intraPepEuDist;
-        private double _intraProtEuDist;
+        private double _avgInten = -1;
+        private double _intraPepEuDist = -1;
+        private double _intraProtEuDist = -1;
         private int _ptmCount;
         private double _ptmRatio;
         private double _absMassDiff;
@@ -21,9 +22,10 @@
 
         public ds_Psm_ForFilter() { }
 
-        public ds_Psm_ForFilter(double mass, int charge, int peplen, int ptmCount, double ptmRatio, double absMassDiff, 
+        public ds_Psm_ForFilter(string protName, double mass, int charge, int peplen, int ptmCount, double ptmRatio, double absMassDiff, 
             double absPrecursorMzDiff, double dotProduct, double deltaScore, double hitsNum, double hitsMean, double hitsStdev, double fVal)
         {
+            this._protName = protName;
             this._mass = mass;
             this._charge = charge;
             this._peplen = peplen;
@@ -37,6 +39,12 @@
             this._hitsMean = hitsMean;
             this._hitsStdev = hitsStdev;
             this._fVal = fVal;
+        }
+
+        public string ProtName
+        {
+            get { return _protName; }
+            set { _protName = value; }
         }
 
         public int Charge

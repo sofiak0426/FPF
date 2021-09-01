@@ -2,7 +2,7 @@
   "profiles": {
     "iproxml_filter": {
       "commandName": "Project",
-      "commandLineArgs": "C:/iproxml_filter_data/ ecoli12_params.txt"
+      "commandLineArgs": "C:/iproxml_filter_data/ nci7_params.txt"
     }
   }
 }

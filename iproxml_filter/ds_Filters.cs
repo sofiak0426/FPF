@@ -7,7 +7,7 @@ namespace iproxml_filter
 
     public class ds_Filters //list for selected ranges for each feature
     {
-        public readonly List<string> featureNameLi = new List<string> {"Charge", "Mass", "Peptide Length", "Average Intensity",
+        public readonly List<string> featureNameLi = new List<string> {"Charge", "Mass", "Peptide Length", "Average Reporter Ion Intensity",
         "Intra-Peptide Euclidean Distance", "Intra-Protein Euclidean Distance", "Number of PTMs", "PTM Ratio","Absolute Mass Difference",
         "Absolute Precursor Mz Difference","Dot Product","DeltaD","Number of Hits","Mean of Dot Products of the Hits",
         "Standard Deviation of Dot Products of the Hits","F-value"};

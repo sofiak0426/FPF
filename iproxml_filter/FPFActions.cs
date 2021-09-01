@@ -18,11 +18,15 @@ namespace iproxml_filter
         private ds_Parameters parametersObj;
         private ds_DataContainer dataContainerObj;
         private ds_Filters filtersObj;
+        private ds_Norm normObj;
+
+        //For log file
         private List<string> logFileLines;
         private string logFile;
         int notSingleHitCnt = 0;
         int noSpstFeatCnt = 0;
-        //List<string> result = new List<string> (); //for testing
+        private List<string> consideredFileLines = new List<string>(); //for testing, storing PSMs that are considered by FPF into a text files
+        private List<string> filteredFileLines = new List<string>(); //for testing, storing PSMs that are filtered out by FPF into a text files
         int added = 0;//for testing
         int filtered = 0;//for testing, how many PSMs are filtered out
 
@@ -60,6 +64,7 @@ namespace iproxml_filter
             this.dataContainerObj = new ds_DataContainer();
             this.filtersObj = new ds_Filters();
             this.parametersObj = new ds_Parameters();
+            this.normObj = new ds_Norm();
             this.logFileLines = new List<string>() {"Warning: PSM with more than one hit:"};
 
             //Read parameters file
@@ -80,7 +85,11 @@ namespace iproxml_filter
             */
             logFile = GetLogFileName();
             File.WriteAllLines(this.mainDir + logFile, logFileLines);
+           
+            File.WriteAllLines(this.mainDir + "consideredTest.txt", consideredFileLines); //For testing
+            File.WriteAllLines(this.mainDir + "filteredTest.txt", filteredFileLines); //For testing
             Console.WriteLine(String.Format("Done! Examined PSMs:{0}, Filtered PSMS:{1}", added, filtered));
+
             return;       
         }
 
@@ -140,9 +149,14 @@ namespace iproxml_filter
                         this.parametersObj.RefChannel = refChannel;
                         break;
                     case "Decoy Prefix":
-                        this.parametersObj.DecoyPrefixArr = lineElementsArr[1].Split(',');
-                        foreach (string decoyPrefix in this.parametersObj.DecoyPrefixArr)
-                            decoyPrefix.Trim();
+                        this.parametersObj.DecoyPrefixArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
+                        break;
+                    case "Background Keywords for Normalization":
+                        if (lineElementsArr[1] != "none")
+                        {
+                            string[] bgKeyArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
+                            this.normObj.AddBgProtKey(bgKeyArr);//Add background keywords to the object
+                        }
                         break;
                     default: //Add feature
                         this.AddFilters(lineElementsArr[0], lineElementsArr[1]);
@@ -174,7 +188,7 @@ namespace iproxml_filter
             if (filterStr.ToLower() == "none")
                 return;
 
-            String[] filterArr = filterStr.Split(',');
+            String[] filterArr = filterStr.Split(',').Select(filter => filter.Trim()).ToArray();
             foreach (string filter in filterArr)
             {
                 if (filter.Trim().IndexOf('-') == -1)
@@ -213,21 +227,22 @@ namespace iproxml_filter
 
         /// <summary>
         /// Only valid PSMs should be considered when filtering.
-        /// Check whther the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR,
-        /// and no channel missing values)
-        /// PSM with missing reporter ion is always invalid.
+        /// Check whether the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR) or with missing reporter ion intensity.
+        /// Return -1 for invalid PSMs, 0 for valid PSMs but with missing reporter ion intensity, and 1 for valid PSMs without missing reporter ion intensity.
         /// </summary>
-        private bool PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob)
-        {
+        public static int PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob, string[] decoyPrefixArr)
+        {      
             //Ignore decoy proteins
-            foreach (string decoyPrefix in this.parametersObj.DecoyPrefixArr)
+            foreach (string decoyPrefix in decoyPrefixArr)
             {
                 if (prot.ProtID.StartsWith(decoyPrefix))
-                    return false;
+                    return -1;
             }
+
             //Ignore psms with shared peptide
             if (pep.b_IsUnique == false)
-                return false;
+                return -1;
+
             //Ignore psms with interprophet probability < 1% FDR probability
             string keyScoreType = "peptideprophet_result";
             Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
@@ -235,17 +250,18 @@ namespace iproxml_filter
             if (psmScoreDic.ContainsKey(keyScoreType))
                 psmScore = psmScoreDic[keyScoreType];
             else //search hits with no iprophet score
-                return false;
+                return -1;
             if (psmScore < fdr001Prob)
-                return false;
+                return -1;
+            
             //Ignore psms with any missing intensity value
             List<double> psmIntenLi = new List<double>();
             psmIntenLi.AddRange(psm.libra_ChanIntenDi.Values);
             if (psmIntenLi.Contains(0))
-                return false;
-            return true;
+                return 0;          
+            return 1;
         }
-        
+
         /// <summary>
         /// Parse PSMs in the database search iprophet file and select those which are valid
         /// (probability > 1% fdr, not decoy, not shared peptide, without missing intensity values).
@@ -268,11 +284,14 @@ namespace iproxml_filter
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
                         //If PSM is valid, add PSM name to the list
-                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbFdr001Prob))
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbFdr001Prob, this.parametersObj.DecoyPrefixArr) != -1 && !this.dataContainerObj.dbPsmIdLi.Contains(psm.QueryNumber))
                             this.dataContainerObj.dbPsmIdLi.Add(psm.QueryNumber);
                     }
                 }
             }
+
+            //Calculate ratio for normalization
+            this.normObj.GetChannelMed(this.parametersObj, this.dataContainerObj.iproDbResult);
             return;
         }
 
@@ -303,37 +322,46 @@ namespace iproxml_filter
                 {
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
-                        if (!PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob))
+                        int int_isValid = PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob, this.parametersObj.DecoyPrefixArr);
+                        if (int_isValid == -1)
                             continue;
+
                         Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
                         Dictionary<string, double> spstScoreDic = new Dictionary<string, double>(); //Store scores specific for SpectraST
                         List<string> scoreNames = new List<string> { "dot", "delta", "precursor_mz_diff", "hits_num",
-                            "hits_mean", "hits_stdev", "fval" };
+                            "hits_mean", "hits_stdev", "fval"};
                         foreach (string scoreName in scoreNames)
                         {
-                            if (psmScoreDic.ContainsKey(scoreName)) //For Spectrast-added PSMs
-                                spstScoreDic.Add(scoreName, psmScoreDic[scoreName]);
-                            else //For PSMs without spectraST features
-                                spstScoreDic.Add(scoreName, (double)-10000);
+                            if (psmScoreDic.ContainsKey(scoreName)) //PSMs with SpctraST features
+                                spstScoreDic.Add(scoreName, Math.Abs(psmScoreDic[scoreName]));
+                            else
+                                spstScoreDic.Add(scoreName, -10000);
                         }
+
                         ds_Psm_ForFilter psmInfoObj = new ds_Psm_ForFilter(
+                            prot.Key, //Protein
                             psm.Pep_exp_mass, //Mass
                             psm.Charge, //Charge
                             pep.Value.Sequence.Length, //Peptide length
                             pep.Value.ModPosList.Count, //PTM count
                             (double)pep.Value.ModPosList.Count / pep.Value.Sequence.Length, //PTM ratio
                             Math.Abs(psm.MassError), //Absolute Mass Difference
-                            Math.Abs(spstScoreDic["precursor_mz_diff"]), //Absolute Precursor Mz Difference
+                            spstScoreDic["precursor_mz_diff"], //Precursor Mz Difference
                             spstScoreDic["dot"], //Dot Product
                             spstScoreDic["delta"], //Delta Score
-                            spstScoreDic["hits_num"], //Hits Num
-                            spstScoreDic["hits_mean"], //Hits Mean
-                            spstScoreDic["hits_stdev"], //Hits Standard Deviation
-                            spstScoreDic["fval"] //f-value
-                            );
-                        List<double> psmIntenLi = new List<double>();
-                        psmIntenLi.AddRange(psm.libra_ChanIntenDi.Values);
-                        psmInfoObj.AvgInten = psmIntenLi.Average();
+                            spstScoreDic["hits_num"], //Hit Num
+                            spstScoreDic["hits_mean"], //Hit Mean
+                            spstScoreDic["hits_stdev"], //Hit Standard Deviation
+                            spstScoreDic["fval"] //F-value
+                            ) ;
+
+                        if (int_isValid != 0) //Without missing intensity
+                        {
+                            List<double> psmNormIntenLi = this.normObj.GetNormIntenLi(this.parametersObj, psm.libra_ChanIntenDi.Values.ToList());
+                            psmInfoObj.AvgInten = psmNormIntenLi.Average();
+                        }
+
+                        //Add information to dbSpstPsmFFDic if the current hit is the only hit for this PSM
                         try
                         {
                             this.dataContainerObj.dbSpstPsmFFDic.Add(psm.QueryNumber, psmInfoObj);
@@ -432,26 +460,25 @@ namespace iproxml_filter
 
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
-                        //Check PSM validity
-                        if (!PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob))
+                        //Check PSM validity, only calculate euclidean between valid PSMs without missing intensity
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob, this.parametersObj.DecoyPrefixArr)!= 1)
                             continue;
 
                         //get intensity and ratio
-                        List<double> psmIntenLi = new List<double>();
-                        psmIntenLi.AddRange(psm.libra_ChanIntenDi.Values);
-                        List<double> psmRatioLi = CalRatio(psmIntenLi);
+                        List<double> psmNormIntenLi = this.normObj.GetNormIntenLi(this.parametersObj, psm.libra_ChanIntenDi.Values.ToList());
+                        List<double> psmNormRatioLi = CalRatio(psmNormIntenLi);
 
                         //Add name and ratio to peptide and protein lists
                         psmsInPepNameLi.Add(psm.QueryNumber);
                         psmsInProtNameLi.Add(psm.QueryNumber);
-                        psmsInPepRatioLi.Add(psmRatioLi);
-                        psmsInProtRatioLi.Add(psmRatioLi);
+                        psmsInPepRatioLi.Add(psmNormRatioLi);
+                        psmsInProtRatioLi.Add(psmNormRatioLi);
 
                         //Add ratio to total ratio
                         for (int i = 0; i < this.parametersObj.ChannelCnt - 1; i++)
                         {
-                            psmsInPepTotalRatioLi[i] += psmRatioLi[i];
-                            psmsInProtTotalRatioLi[i] += psmRatioLi[i];
+                            psmsInPepTotalRatioLi[i] += psmNormRatioLi[i];
+                            psmsInProtTotalRatioLi[i] += psmNormRatioLi[i];
                         }
                     }
 
@@ -599,7 +626,7 @@ namespace iproxml_filter
         /// <returns></returns>
         private bool FilterPsm(string psmName)
         {
-            //If the PSM need not to be considered (FDR too small / shared peptide / missing value / etc.)
+            //If the PSM need not to be considered (FDR too small / shared peptide / decoy / etc.)
             if (!this.dataContainerObj.dbSpstPsmFFDic.ContainsKey(psmName))
                 return false;
 
@@ -608,10 +635,13 @@ namespace iproxml_filter
                 return false;
 
             this.added ++;
+            this.consideredFileLines.Add(psmName);//For testing
+
             //Filtering for every feature
             //Console.WriteLine(String.Format("{0}: added PSM", psmName));
             this.dataContainerObj.dbSpstPsmFFDic.TryGetValue(psmName, out ds_Psm_ForFilter psmInfoObj);
             double featValue;
+            bool b_noSpstFeat = false;
             foreach (KeyValuePair<string, List<(double lowerLim, double upperLim)>> filtsForOneFeat in filtersObj.FiltDic)
             {
                 switch (filtsForOneFeat.Key)
@@ -625,7 +655,7 @@ namespace iproxml_filter
                     case "Peptide Length":
                         featValue = (double)psmInfoObj.Peplen;
                         break;
-                    case "Average Intensity":
+                    case "Average Reporter Ion Intensity":
                         featValue = psmInfoObj.AvgInten;
                         break;
                     case "Intra-Peptide Euclidean Distance":
@@ -668,22 +698,35 @@ namespace iproxml_filter
                         throw new ApplicationException(String.Format("Feature name error:{0}",filtsForOneFeat.Key));
                 }
 
-                foreach ((double lowerLim, double upperLim) filtRange in filtsForOneFeat.Value)
+                if (featValue == -10000) //In some PSMS, there may be some SpectraST features not written in iprophet file
                 {
-                    if (featValue == -10000) //In some PSMS, there may be some SpectraST features not written in iprophet file
+                    b_noSpstFeat = true;
+                    continue;
+                }
+                else if (featValue == -1) //Dealing with PSMs with missing reporter ion intensity (will not consider avg intenstiy / euclidean distances)
+                    continue;
+                else
+                {
+                    //If the feature should be considered
+                    foreach ((double lowerLim, double upperLim) filtRange in filtsForOneFeat.Value)
                     {
-                        this.logFileLines.Add(psmName + "\n");
-                        this.noSpstFeatCnt++;
-                        break;
-                    }
-                    if ((featValue >= filtRange.lowerLim) && (featValue < filtRange.upperLim))
-                    {
-                        //this.result.Add(psmName);
-                        this.filtered++;
-                        return true;
+                        if ((featValue >= filtRange.lowerLim) && (featValue < filtRange.upperLim))
+                        {
+                            this.filtered++;
+                            this.filteredFileLines.Add(psmName);
+                            return true;
+                        }
                     }
                 }
-            }      
+            }
+
+            //If there are missing SpectraST features, write to log file
+            if (b_noSpstFeat == true)
+            {
+                this.logFileLines.Add(psmName + "\n");
+                this.noSpstFeatCnt++;
+            }
+
             return false;
         }
 
