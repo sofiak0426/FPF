@@ -3,14 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using ResultReader;
 
-namespace iproxml_filter
+namespace FPF
 {
     class ds_Norm
     {
-        private List<double> _bgNormRatioLi = new List<double>(); //The ratio that each channel should multiply by during normalization (obtained from channel median intensity)
-        private List<(string, string)> _bgNormKeyLi = new List<(string, string)>(); //Specify keywords to identify background proteins. Key: "PRE" for prefixes and "SUF" for suffixes; Value: the keyword
-        
-        //Add background prefixes or suffixes to the _bgProtKeywordLi
+        private List<double> _bgNormRatioLi = new List<double>(); //List storing the ratio that each channel should multiply by during normalization (obtained from median reporter ion intensity of each channel)
+        private List<(string, string)> _bgNormKeyLi = new List<(string, string)>(); //Specify protein-ID keywords to identify background proteins. Key: "PRE" for prefixes and "SUF" for suffixes; Value: the protein-name keyword
+
+
+        /// <summary>
+        /// Adding background prefixes or suffixes to _bgNormKeyLi
+        /// </summary>
+        /// <param name="bgProtKeyArr">Array of strings containing background protein keywords from parameter file</param>
         public void AddBgProtKey(String[] bgProtKeyArr)
         {
             foreach (string bgProtKeyStr in bgProtKeyArr)
@@ -20,14 +24,16 @@ namespace iproxml_filter
                 else if (bgProtKeyStr.StartsWith('-')) //Suffix
                     this._bgNormKeyLi.Add(("SUF", bgProtKeyStr.Substring(1)));
                 else
-                    throw new ApplicationException(String.Format("You specified background keywords in the wrong format: {0}", bgProtKeyStr));
+                    throw new ApplicationException(String.Format("Error: you specified background keywords in the wrong format: {0}", bgProtKeyStr));
             }           
         }
 
-        //Calculate ratio for normalization from median intensity of all valid PSMs
+        /// <summary>
+        /// Calculate normalization ratio from median reporter ion intensity of all valid background PSMs
+        /// </summary>
         public void GetChannelMed(ds_Parameters parametersObj, ds_SearchResult dbSearchResult)
         {
-            //Check if normalization is needed; if no, then specify normalization ratios to 1
+            //Check if normalization is needed; if not, specify normalization ratios to 1 and return
             if (this._bgNormKeyLi.Count == 0)
             {
                 for (int i = 0; i < parametersObj.ChannelCnt - 1; i++)
@@ -35,12 +41,13 @@ namespace iproxml_filter
                 return;
             }
 
-            //Setup 
-            List<List<double>> chanAllIntenLi = new List<List<double>>();
+            //chanAllIntenLi is an array that contains n rows (one row for each channel). 
+            //Each row contains reporter ion intensities of all valid background PSMs (for that particular channel).
+            List<List<double>> chanAllIntenLi = new List<List<double>>(); 
             for (int i = 0; i < parametersObj.ChannelCnt; i++)
                 chanAllIntenLi.Add(new List<double>());
 
-            //Puah all intensities of valid PSMs into the list chanAllIntenLi
+            //Puah intensities of valid background PSMs channel by channel into each row in chanAllIntenLi
             foreach (KeyValuePair<string, ds_Protein> prot in dbSearchResult.Protein_Dic)
             {
                 //check if the protein is a background protein
@@ -65,11 +72,10 @@ namespace iproxml_filter
                 {
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
-                        if (FPFActions.PsmIsValid(psm, pep.Value, prot.Value, parametersObj.DbFdr001Prob, parametersObj.DecoyPrefixArr) == 1)
-                        {
-                            for (int i = 0; i < parametersObj.ChannelCnt; i++)
-                                chanAllIntenLi[i].Add(psm.libra_ChanIntenDi.Values.ToList()[i]);
-                        }
+                        if (FPFActions.PsmIsValid(psm, pep.Value, prot.Value, parametersObj.DbFdr001Prob, parametersObj.DecoyPrefixArr) != 1) //invalid PSM or with zero reporter ion intenstiy
+                            continue;
+                        for (int i = 0; i < parametersObj.ChannelCnt; i++)
+                            chanAllIntenLi[i].Add(psm.libra_ChanIntenDi.Values.ToList()[i]);
                     }
                 }
             }
@@ -79,13 +85,15 @@ namespace iproxml_filter
             foreach (List<double> chanAllInten in chanAllIntenLi)
             {
                 chanAllInten.Sort();
-                double median = 0;
+                double median;
                 if (chanAllInten.Count % 2 == 0)
                     median = (chanAllInten[chanAllInten.Count / 2 - 1] + chanAllInten[chanAllInten.Count / 2]) / 2;
                 else
                     median = chanAllInten[(chanAllInten.Count - 1) / 2];
                 chanMedLi.Add(median);
             }
+
+            //Calculate normalization ratio
             for (int i = 0; i < parametersObj.ChannelCnt; i++)
             {
                 if (i != parametersObj.RefChannel - 1)
@@ -93,14 +101,18 @@ namespace iproxml_filter
             }
         }
 
-        //Calculate normalized intensities
+        /// <summary>
+        /// Calculate the normalized reporter ion intensities of a single PSM.
+        /// </summary>
+        /// <param name="psmOrigIntenLi">The original reporter ion intensities of a single PSM. </param>
+        /// <returns></returns>
         public List<double> GetNormIntenLi(ds_Parameters parametersObj, List<double> psmOrigIntenLi)
         {
             List<double> psmNormIntenLi = new List<double>();
             int ratioIndex = 0;
             for (int i = 0; i < parametersObj.ChannelCnt; i++)
             {
-                if (i == parametersObj.RefChannel - 1)
+                if (i == parametersObj.RefChannel - 1) //reference channel
                     psmNormIntenLi.Add(psmOrigIntenLi[i]);
                 else
                 {

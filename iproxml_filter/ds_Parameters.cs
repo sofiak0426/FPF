@@ -1,28 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
-namespace iproxml_filter
+namespace FPF
 {
     public class ds_Parameters
     {
-        private string _iproDbFile;
-        private string _iproDbSpstFile;
-        private string _modIproDbSpstFile; //Output file name for the whole project
-        private int _channelCnt;
-        private int _refChannel;
-        private string[] _decoyPrefixArr;
-        private float _dbFdr001Prob;
-        private float _dbSpstFdr001Prob;
-        private List<double> _bgNormRatioLi = new List<double>(); //Intensity normalization ratio
-        private List<string> _bgProtNameLi = new List<string>();
+        private string _iproDbFile; //File name for DB iprophet search result
+        private string _iproDbSpstFile; //File name for DB + SL iprophet search result
+        private string _modIproDbSpstFile; //Output name (the filtered DB + SL iprophet file)
+        private int _channelCnt;//Total number of channels
+        private int _refChannel;//Number of reference channel (starting from 1)
+        private string[] _decoyPrefixArr; //Array storing prefixes of decoy proteins
+        private float _dbFdr001Prob; // FDR 1% probability of DB iprophet search
+        private float _dbSpstFdr001Prob; //FDR 1% probability of DB + SL iprophet search
 
-        // Stores that whether the global parameter values is specified by user or not
+        //A dictionary that stores whether the global param values is correctly specified by user or not
+        //Key: Parameter name in param file; Value: if the param is correctly specified by the user
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
             {"Database Iprophet Search File", false},
             {"Database + SpectraST Iprophet Search File", false},
             {"Output File", false},
-            {"Channel Number", false},
+            {"Number of Channels", false},
             {"Reference Channel", false},
             {"Decoy Prefix", false},
             {"Background Keywords for Normalization", false}
@@ -68,34 +65,37 @@ namespace iproxml_filter
             get { return _dbSpstFdr001Prob; }
             set { _dbSpstFdr001Prob = value; }
         }
+
         /// <summary>
         /// Check whether the current param name in the param file corresponds to one of the the correct param names in the dictionary.
         /// True: param name is correct; False: there is no corresponding param name
         /// </summary>
-        /// <param name="stringInParamFile"></param>
-        /// <returns></returns>
-        public bool ValidateParamDescription (string stringInParamFile)
+        public bool ValidateParamName (string paramNameInParamFile)
         {
-            return _paramIsSetDic.ContainsKey(stringInParamFile);
+            return _paramIsSetDic.ContainsKey(paramNameInParamFile);
         }
 
         /// <summary>
-        /// If one parameter is correctly specified by user, change the item value (whose key is the parameter name) to true
+        /// If a param is correctly specified by user, change the item value (whose key is the parameter name) in _paramIsSetDic to true
         /// </summary>
-        /// <param name="paramName"></param>
         public void SetParamAsTrue (string paramName)
         {
             _paramIsSetDic[paramName] = true;
         }
-
+        
+        /// <summary>
+        /// Check if a param is correctly specified by the user or not
+        /// </summary>
+        /// <returns></returns>
         public bool GetParamIsSet(string paramName)
         {
             return _paramIsSetDic[paramName];
         }
 
         /// <summary>
-        /// Check whether all parameters in the dic are correctly specified by the user.
-        /// Then return a list containing all parameters names that are not specified.
+        /// Check whether all params in _paramIsSetDic are correctly specified by the user.
+        /// Then return a list containing all parameters names that are not specified. 
+        /// If all params are correctly specified, an empty list will by returned.
         /// </summary>
         public List<string> CheckAllParamsSet()
         {

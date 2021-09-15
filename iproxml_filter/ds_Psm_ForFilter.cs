@@ -1,31 +1,31 @@
-﻿namespace iproxml_filter
+﻿namespace FPF
 {
     public class ds_Psm_ForFilter
     {
-        private string _protName;
+        private string _protID; 
         private int _charge;
         private double _mass;
         private int _peplen;
-        private double _avgInten = -1;
-        private double _intraPepEuDist = -1;
-        private double _intraProtEuDist = -1;
+        private double _avgInten = -1; //Average reporter ion intensity of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
+        private double _intraPepEuDist = -1; //Intra-peptide euclidean distance of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
+        private double _intraProtEuDist = -1; //Intra-protein euclidean distance of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
         private int _ptmCount;
         private double _ptmRatio;
-        private double _absMassDiff;
-        private double _absPrecursorMzDiff;
+        private double _absMassDiff; //Absolute mass difference
+        private double _absPrecursorMzDiff; //Absolute precursor m/z difference
         private double _dotProduct;
         private double _deltaScore;
         private double _hitsNum;
         private double _hitsMean;
         private double _hitsStdev;
-        private double _fVal;
+        private double _fVal; //F-value
 
         public ds_Psm_ForFilter() { }
 
-        public ds_Psm_ForFilter(string protName, double mass, int charge, int peplen, int ptmCount, double ptmRatio, double absMassDiff, 
+        public ds_Psm_ForFilter(string protID, double mass, int charge, int peplen, int ptmCount, double ptmRatio, double absMassDiff, 
             double absPrecursorMzDiff, double dotProduct, double deltaScore, double hitsNum, double hitsMean, double hitsStdev, double fVal)
         {
-            this._protName = protName;
+            this._protID = protID;
             this._mass = mass;
             this._charge = charge;
             this._peplen = peplen;
@@ -41,10 +41,10 @@
             this._fVal = fVal;
         }
 
-        public string ProtName
+        public string ProtID
         {
-            get { return _protName; }
-            set { _protName = value; }
+            get { return _protID; }
+            set { _protID = value; }
         }
 
         public int Charge

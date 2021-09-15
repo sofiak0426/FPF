@@ -7,9 +7,8 @@ using System.Xml;
 using System.Globalization;
 using ResultReader;
 
-namespace iproxml_filter
+namespace FPF
 {
-
     public class FPFActions
     {
         private string mainDir;
@@ -20,18 +19,16 @@ namespace iproxml_filter
         private ds_Filters filtersObj;
         private ds_Norm normObj;
 
-        //For log file
-        private List<string> logFileLines;
-        private string logFile;
-        int notSingleHitCnt = 0;
-        int noSpstFeatCnt = 0;
-        private List<string> consideredFileLines = new List<string>(); //for testing, storing PSMs that are considered by FPF into a text files
-        private List<string> filteredFileLines = new List<string>(); //for testing, storing PSMs that are filtered out by FPF into a text files
-        int added = 0;//for testing
-        int filtered = 0;//for testing, how many PSMs are filtered out
+        //For log file and console log
+        private List<string> logFileLines; //Content of log file
+        private string logFile; // Output name for log file
+        int notSingleHitCnt = 0; // Number of PSMs that has more than one first-rank hit
+        int noSpstFeatCnt = 0; //Number of PSMs that are considered but with missing SpectraST feature values
+        int consideredCnt = 0;// Number of PSMs that are considered by FPF
+        int filteredOutCnt = 0;// Number of PSM that are filtered out by FPF
 
         /// <summary>
-        /// Defines thread actions by specified id
+        /// Defines thread actions by specified id. 0 for reading DB iprophet file and 1 for reading DB + SL iprophet file.
         /// </summary>
         public void DoWorkerJobs(int id)
         {
@@ -49,10 +46,10 @@ namespace iproxml_filter
         /// <summary>
         /// Performs main actions.
         /// 1. Read Parameter File
-        /// 2. Read PSM names from database search iprophet file
-        /// 3. Read PSM information with search result reader from database and spectrast search iprophet file
-        /// 4. Calculate intra-peptide and intra-protein euclidean distance
-        /// 5. Parse the database and spectrast search iprophet file again, filter and write to new file
+        /// 2. Read DB search iprophet file with result reader and collect PSM IDs
+        /// 3. Read DB + SL iprophet file with result reader and collect PSM information
+        /// 4. Calculate intra-peptide and intra-protein euclidean distance for each PSM in DB + SL iprophet file
+        /// 5. Parse the DB + SL iprophet file again, filter and write to new file
         /// </summary>
         /// <param name="mainDir">Directory that stores the parameter file and all iprophet files. It is also where the new iprophet file will be written to.</param>
         /// <param name="paramFile">Parameter file name</param>
@@ -70,34 +67,29 @@ namespace iproxml_filter
             //Read parameters file
             this.ReadParamFile(this.mainDir + paramFile);
 
+            //Read the two iprophet files simultaneously with two threads
             List<int> workerIds = new List<int>{0,1};
             Parallel.ForEach(workerIds, workerId => {
                 this.DoWorkerJobs(workerId);
             });
 
+            //Collect PSM information, calculate distances and filter
             this.CollectPsmFF_FromProtein_Dic();
             this.CalEuDist();
             this.FilterDbSpstIproFile();
-            /*
-            using StreamWriter f = new StreamWriter(this.mainDir + "test.txt"); 
-            foreach (string r in result)
-                f.WriteLine(r);
-            */
+
+            //Write to log file and console
             logFile = GetLogFileName();
-            File.WriteAllLines(this.mainDir + logFile, logFileLines);
-           
-            File.WriteAllLines(this.mainDir + "consideredTest.txt", consideredFileLines); //For testing
-            File.WriteAllLines(this.mainDir + "filteredTest.txt", filteredFileLines); //For testing
-            Console.WriteLine(String.Format("Done! Examined PSMs:{0}, Filtered PSMS:{1}", added, filtered));
+            File.WriteAllLines(this.mainDir + logFile, logFileLines);        
+            Console.WriteLine(String.Format("FPF actions done! Examined: {0} PSMs, filtered out: {1} PSMs", consideredCnt, filteredOutCnt));
 
             return;       
         }
 
         /// <summary>
-        /// Reads the parameter file line by line and checks whether the parameter name corresponds to the correct 
-        /// parameter names. If correct, then modifies global variables.
+        /// Reads the parameter file line by line and checks whether the parameter name corresponds to the correct parameter names.
+        /// If the name is correct, modifies global variables.
         /// </summary>
-        /// <param name="paramFile">Paramter file name</param>
         private void ReadParamFile(string paramFile)
         {
             Console.WriteLine("Reading parameter file...");
@@ -105,7 +97,7 @@ namespace iproxml_filter
             using StreamReader paramFileReader = new StreamReader(paramFile);
             while ((line = paramFileReader.ReadLine()) != null)
             {
-                //Skip anotations or empty lines
+                //Skip annotations or empty lines
                 if (line == "")
                     continue;
                 else if (line[0] == '#')
@@ -115,20 +107,32 @@ namespace iproxml_filter
                 lineElementsArr[0] = lineElementsArr[0].Trim();
                 lineElementsArr[1] = lineElementsArr[1].Trim();
 
-                string errorCode = String.Format("Parameter error:" +
-                    "Have you modified the parameter to \"{0}\"?", lineElementsArr[0]);
-                if (parametersObj.ValidateParamDescription(lineElementsArr[0])) //If the line specifies a parameter
+                //Check if the parameter or feature is already specified in another line and if the name is correct or not
+                string errorCode = String.Format("Error:" +
+                    "have you modified the parameter to \"{0}\"?", lineElementsArr[0]);
+                if (parametersObj.ValidateParamName(lineElementsArr[0])) //If the line specifies a parameter
                 {
-                    if(parametersObj.GetParamIsSet(lineElementsArr[0]) == true)//Check whether the param is specified by the user already
+                    if(parametersObj.GetParamIsSet(lineElementsArr[0]) == true) //Check whether the param is specified by the user already
                     {
-                        errorCode = String.Format("You have repeatedly specify the parameter \"{0}\"", lineElementsArr[0]);
+                        errorCode = String.Format("Error: you have repeatedly specify the parameter \"{0}\"", lineElementsArr[0]);
                         throw new ApplicationException(errorCode);
                     }
+                    parametersObj.SetParamAsTrue(lineElementsArr[0]);
+
                 }
-                else if (filtersObj.featureNameLi.Contains(lineElementsArr[0])) { } //If the line specifies a filter, then continue
+                else if (filtersObj.ValidateFeatureName(lineElementsArr[0])) //If the line specifies a filter
+                {
+                    if (filtersObj.GetFeatureIsSet(lineElementsArr[0]) == true) //Check whether the param is specified by the user already
+                    {
+                        errorCode = String.Format("Error: you have repeatedly specify the filter \"{0}\"", lineElementsArr[0]);
+                        throw new ApplicationException(errorCode);
+                    }
+                    filtersObj.SetFeatureAsTrue(lineElementsArr[0]);
+                } 
                 else //parameter name error
                     throw new ApplicationException(errorCode);
 
+                //Set param or filter values
                 switch (lineElementsArr[0])
                 {
                     case "Database Iprophet Search File":
@@ -140,48 +144,57 @@ namespace iproxml_filter
                     case "Output File":
                         this.parametersObj.ModIproDbSpstFile = lineElementsArr[1];
                         break;
-                    case "Channel Number": //Channel Number
-                        int.TryParse(lineElementsArr[1], out int channelCnt);
+                    case "Number of Channels":
+                        if (int.TryParse(lineElementsArr[1], out int channelCnt) == false)
+                            throw new ApplicationException (String.Format ("Error: incorrect format for \"number of channels\": {0}", lineElementsArr[1]));
+                        if (channelCnt <= 0)
+                            throw new ApplicationException (String.Format ("Error: incorrect input for \"number of channels\": {0}", lineElementsArr[1]));
                         this.parametersObj.ChannelCnt = channelCnt;
                         break;
                     case "Reference Channel":
-                        int.TryParse(lineElementsArr[1], out int refChannel);
+                        if (int.TryParse(lineElementsArr[1], out int refChannel) == false)
+                            throw new ApplicationException (String.Format ("Error: incorrect format for \"reference channel\": {0}", lineElementsArr[1]));
+                        if (refChannel <= 0)
+                            throw new ApplicationException (String.Format ("Error: incorrect input for \"reference channel\": {0}", lineElementsArr[1]));
                         this.parametersObj.RefChannel = refChannel;
                         break;
                     case "Decoy Prefix":
                         this.parametersObj.DecoyPrefixArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
                         break;
                     case "Background Keywords for Normalization":
-                        if (lineElementsArr[1] != "none")
+                        if (lineElementsArr[1].ToLower() != "none")
                         {
                             string[] bgKeyArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
-                            this.normObj.AddBgProtKey(bgKeyArr);//Add background keywords to the object
+                            this.normObj.AddBgProtKey(bgKeyArr); //Add background keywords to the object
                         }
                         break;
                     default: //Add feature
                         this.AddFilters(lineElementsArr[0], lineElementsArr[1]);
                         break;
                 }
-                parametersObj.SetParamAsTrue(lineElementsArr[0]);
             }
-            //Check if all the parameters are specified by the user
+            //Check if all the parameters are specified by the user (no need to check filter)
             List<string> missingParams = parametersObj.CheckAllParamsSet();
-            string errorcode = "You didn't specify the values of the following parameters:\n";
             if (missingParams.Count > 0) //Some of the parameters are missing
             {
+                string errorcode = "Error: you didn't specify the values of the following parameters:\n";
                 foreach (string missingParam in missingParams)
                     errorcode += String.Format("\"{0}\"\n", missingParam);
                 throw new ApplicationException(errorcode);
             }
+            //Check if reference channel is wrongly specified after all params are set
+            if (this.parametersObj.RefChannel > this.parametersObj.ChannelCnt)
+                throw new ApplicationException("Error: reference channel number out of range!");
+
             paramFileReader.Close();
             return;
         }
 
         /// <summary>
-        /// Adds filter ranges for each feature, as specified by the user in the param file, to filter list for further use.
+        /// Adds user-specified filters for each feature to filterObj for further use.
         /// </summary>
-        /// <param name="feature"> Specify the feature name</param>
-        /// <param name="filterStr">The string containing ranges of filters, read from the param file</param>
+        /// <param name="feature"> Feature name</param>
+        /// <param name="filterStr"> The string containing filters for a single filter, read from the param file</param>
         private void AddFilters(string feature, string filterStr)
         {
             //If the user did not specify filters of this feature
@@ -191,34 +204,26 @@ namespace iproxml_filter
             String[] filterArr = filterStr.Split(',').Select(filter => filter.Trim()).ToArray();
             foreach (string filter in filterArr)
             {
-                if (filter.Trim().IndexOf('-') == -1)
-                    throw new ApplicationException(String.Format("Feature \"{0}\": Wrong filter format \"{1}\"", feature, filterStr));
+                if (filter.IndexOf('-') == -1)
+                    throw new ApplicationException(String.Format("Feature \"{0}\": wrong filter format \"{1}\"", feature, filterStr));
 
-                String[] filtLimArr = filter.Trim().Split('-');
+                String[] filtLimArr = filter.Split('-').Select(filtLim => filtLim.Trim()).ToArray(); //Containing strings for lower and upper limits of one filter
                 (double lowerLim, double upperLim) filtLim;
                 //Set up filter lower limit
                 if (filtLimArr[0] == String.Empty)
                     filtLim.lowerLim = Double.NegativeInfinity;
                 else
                 {
-                    try{
-                        double.TryParse(filtLimArr[0], out filtLim.lowerLim);
-                    }
-                    catch{
-                        throw new ApplicationException(String.Format("Feature {0}: Wrong lower limit format", feature));
-                    }
+                    if (double.TryParse(filtLimArr[0], out filtLim.lowerLim) == false)
+                        throw new ApplicationException(String.Format("Feature {0}: wrong lower limit format", feature));
                 }
                 //Set up filter upper limit
                 if (filtLimArr[1] == String.Empty)
                     filtLim.upperLim = Double.PositiveInfinity;
                 else
                 {
-                    try{
-                        double.TryParse(filtLimArr[1], out filtLim.upperLim);
-                    }
-                    catch{
-                        throw new ApplicationException(String.Format("Feature {0}: Wrong upper limit format", feature));
-                    }
+                    if (double.TryParse(filtLimArr[1], out filtLim.upperLim) == false)
+                        throw new ApplicationException(String.Format("Feature {0}: wrong upper limit format", feature));
                 }
                 this.filtersObj.AddFilter(feature, filtLim);
             }
@@ -227,26 +232,28 @@ namespace iproxml_filter
 
         /// <summary>
         /// Only valid PSMs should be considered when filtering.
-        /// Check whether the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR) or with missing reporter ion intensity.
-        /// Return -1 for invalid PSMs, 0 for valid PSMs but with missing reporter ion intensity, and 1 for valid PSMs without missing reporter ion intensity.
+        /// Check whether the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR) and whether the PSM contains zero reporter ion intensity.
         /// </summary>
+        /// <param name="fdr001Prob">FDR 1% probability for the iprophet file</param>
+        /// <param name="decoyPrefixArr">Array that contains all the possible decoy prefixes</param>
+        /// <returns>-1 for invalid PSMs, 0 for valid PSMs but with missing reporter ion intensity, and 1 for valid PSMs without missing reporter ion intensity.</returns>
         public static int PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob, string[] decoyPrefixArr)
         {      
-            //Ignore decoy proteins
+            //Check if the protein is decoy
             foreach (string decoyPrefix in decoyPrefixArr)
             {
                 if (prot.ProtID.StartsWith(decoyPrefix))
                     return -1;
             }
 
-            //Ignore psms with shared peptide
+            //Check if the peptide is shared
             if (pep.b_IsUnique == false)
                 return -1;
 
-            //Ignore psms with interprophet probability < 1% FDR probability
+            //Check if the PSM has interprophet probability < 1% FDR probability
             string keyScoreType = "peptideprophet_result";
-            Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
-            double psmScore = 0;
+            Dictionary<string, double> psmScoreDic = (Dictionary<string, double>) psm.Score;
+            double psmScore;
             if (psmScoreDic.ContainsKey(keyScoreType))
                 psmScore = psmScoreDic[keyScoreType];
             else //search hits with no iprophet score
@@ -254,11 +261,12 @@ namespace iproxml_filter
             if (psmScore < fdr001Prob)
                 return -1;
             
-            //Ignore psms with any missing intensity value
+            //Check if the PSM has any missing intensity value
             List<double> psmIntenLi = new List<double>();
             psmIntenLi.AddRange(psm.libra_ChanIntenDi.Values);
             if (psmIntenLi.Contains(0))
-                return 0;          
+                return 0;   
+            
             return 1;
         }
 
@@ -634,8 +642,7 @@ namespace iproxml_filter
             if (this.dataContainerObj.dbPsmIdLi.Contains(psmName))
                 return false;
 
-            this.added ++;
-            this.consideredFileLines.Add(psmName);//For testing
+            this.consideredCnt ++;
 
             //Filtering for every feature
             //Console.WriteLine(String.Format("{0}: added PSM", psmName));
@@ -712,8 +719,7 @@ namespace iproxml_filter
                     {
                         if ((featValue >= filtRange.lowerLim) && (featValue < filtRange.upperLim))
                         {
-                            this.filtered++;
-                            this.filteredFileLines.Add(psmName);
+                            this.filteredOutCnt++;
                             return true;
                         }
                     }

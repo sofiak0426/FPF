@@ -9,7 +9,6 @@ C:\iproxml_filter\iproxml_filter\bin\Debug\netcoreapp3.1\NPOI.dll
 C:\iproxml_filter\iproxml_filter\bin\Debug\netcoreapp3.1\ICSharpCode.SharpZipLib.dll
 C:\iproxml_filter\iproxml_filter\bin\Debug\netcoreapp3.1\ResultReader.pdb
 C:\iproxml_filter\iproxml_filter\bin\Debug\netcoreapp3.1\NPOI.xml
-C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.csprojAssemblyReference.cache
 C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.AssemblyInfoInputs.cache
 C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.AssemblyInfo.cs
 C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.csproj.CoreCompileInputs.cache
@@ -17,3 +16,4 @@ C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.csproj.C
 C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.dll
 C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.pdb
 C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.genruntimeconfig.cache
+C:\iproxml_filter\iproxml_filter\obj\Debug\netcoreapp3.1\iproxml_filter.csprojAssemblyReference.cache
