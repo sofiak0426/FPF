@@ -6,9 +6,9 @@
         private int _charge;
         private double _mass;
         private int _peplen;
-        private double _avgInten = -1; //Average reporter ion intensity of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
-        private double _intraPepEuDist = -1; //Intra-peptide euclidean distance of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
-        private double _intraProtEuDist = -1; //Intra-protein euclidean distance of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
+        private double _avgInten = -1000; //Average reporter ion intensity of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
+        private double _intraPepEuDist = -1000; //Intra-peptide euclidean distance of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
+        private double _intraProtEuDist = -1000; //Intra-protein euclidean distance of the PSM. If the PSM contains zero repoter ion intensities, set the value to -1. (This feature will not be considered then.)
         private int _ptmCount;
         private double _ptmRatio;
         private double _absMassDiff; //Absolute mass difference

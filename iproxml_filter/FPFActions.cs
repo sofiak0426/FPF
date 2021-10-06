@@ -26,6 +26,7 @@ namespace FPF
         int noSpstFeatCnt = 0; //Number of PSMs that are considered but with missing SpectraST feature values
         int consideredCnt = 0;// Number of PSMs that are considered by FPF
         int filteredOutCnt = 0;// Number of PSM that are filtered out by FPF
+        int zeroIntenCnt = 0;//test
 
         /// <summary>
         /// Defines thread actions by specified id. 0 for reading DB iprophet file and 1 for reading DB + SL iprophet file.
@@ -82,7 +83,7 @@ namespace FPF
             logFile = GetLogFileName();
             File.WriteAllLines(this.mainDir + logFile, logFileLines);        
             Console.WriteLine(String.Format("FPF actions done! Examined: {0} PSMs, filtered out: {1} PSMs", consideredCnt, filteredOutCnt));
-
+            Console.WriteLine(zeroIntenCnt);
             return;       
         }
 
@@ -271,8 +272,9 @@ namespace FPF
         }
 
         /// <summary>
-        /// Parse PSMs in the database search iprophet file and select those which are valid
-        /// (probability > 1% fdr, not decoy, not shared peptide, without missing intensity values).
+        /// 1. Parse PSMs in the DB iprophet file with result reader.
+        /// 2. Add PSMs which are valid to the list.
+        /// 3. Calculate normalization ratio using DB iprophet file.
         /// </summary>
         private void ReadIproDb()
         {
@@ -281,7 +283,7 @@ namespace FPF
             this.dataContainerObj.iproDbResult = iproDbReader.ReadFiles(this.mainDir + this.parametersObj.IproDbFile, "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
-            //get fdr < 1% probability
+            //get FDR 1% probability
             this.parametersObj.DbFdr001Prob = dataContainerObj.iproDbResult.GetPepMinProbForFDR(0.01f, "");
 
             //Check PSM validity
@@ -292,7 +294,8 @@ namespace FPF
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
                         //If PSM is valid, add PSM name to the list
-                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbFdr001Prob, this.parametersObj.DecoyPrefixArr) != -1 && !this.dataContainerObj.dbPsmIdLi.Contains(psm.QueryNumber))
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbFdr001Prob, this.parametersObj.DecoyPrefixArr) != -1 
+                            && !this.dataContainerObj.dbPsmIdLi.Contains(psm.QueryNumber))
                             this.dataContainerObj.dbPsmIdLi.Add(psm.QueryNumber);
                     }
                 }
@@ -304,7 +307,7 @@ namespace FPF
         }
 
         /// <summary>
-        /// Parse database + spectraST serach iprophet file with search result reader
+        /// Parse DB + SL iprophet file with result reader.
         /// </summary>
         private void ReadIproDbSpst()
         {
@@ -318,12 +321,12 @@ namespace FPF
         }
 
         /// <summary>
-        ///For each PSM in the database + spectraST search iprophet file, 
-        ///collects feature values that are required for filtering to psmInfoDic.
+        /// Collects feature values of valid PSMs in DB + SL iprophet file to dbSpstPsmFFDic.
         /// </summary>
         private void CollectPsmFF_FromProtein_Dic()
         {
-            Console.WriteLine("Collecting PSM information...");
+            Console.Write("Collecting PSM information");
+            int psmCnt = 0; //For console
             foreach (KeyValuePair<string, ds_Protein> prot in this.dataContainerObj.iproDbSpstResult.Protein_Dic)
             {
                 foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
@@ -331,19 +334,20 @@ namespace FPF
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
                         int int_isValid = PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob, this.parametersObj.DecoyPrefixArr);
-                        if (int_isValid == -1)
+                        if (int_isValid == -1) //Invalid PSM
                             continue;
 
+                        psmCnt++;
                         Dictionary<string, double> psmScoreDic = (Dictionary<string, double>)psm.Score;
                         Dictionary<string, double> spstScoreDic = new Dictionary<string, double>(); //Store scores specific for SpectraST
-                        List<string> scoreNames = new List<string> { "dot", "delta", "precursor_mz_diff", "hits_num",
-                            "hits_mean", "hits_stdev", "fval"};
-                        foreach (string scoreName in scoreNames)
+                        List<string> spstScoreNames = new List<string> { "dot", "delta", "precursor_mz_diff", "hits_num",
+                            "hits_mean", "hits_stdev", "fval"}; //Features of SpectraST
+                        foreach (string spstScoreName in spstScoreNames)
                         {
-                            if (psmScoreDic.ContainsKey(scoreName)) //PSMs with SpctraST features
-                                spstScoreDic.Add(scoreName, Math.Abs(psmScoreDic[scoreName]));
-                            else
-                                spstScoreDic.Add(scoreName, -10000);
+                            if (psmScoreDic.ContainsKey(spstScoreName)) //PSMs with SpectraST features
+                                spstScoreDic.Add(spstScoreName, Math.Abs(psmScoreDic[spstScoreName]));
+                            else //PSM without SpectraST features
+                                spstScoreDic.Add(spstScoreName, -10000);
                         }
 
                         ds_Psm_ForFilter psmInfoObj = new ds_Psm_ForFilter(
@@ -369,7 +373,8 @@ namespace FPF
                             psmInfoObj.AvgInten = psmNormIntenLi.Average();
                         }
 
-                        //Add information to dbSpstPsmFFDic if the current hit is the only hit for this PSM
+                        //Add information to dbSpstPsmFFDic if the current hit is the only hit for this PSM.
+                        //If there is more than one hit, merely add the PSM name to log file and use the first hit.
                         try
                         {
                             this.dataContainerObj.dbSpstPsmFFDic.Add(psm.QueryNumber, psmInfoObj);
@@ -379,15 +384,22 @@ namespace FPF
                             this.logFileLines.Add(psm.QueryNumber);
                             this.notSingleHitCnt++;
                         }
+
+                        //Print to console
+                        if (psmCnt % 10000 == 0)
+                            Console.Write(psmCnt);
+                        else if (psmCnt % 1000 == 0)
+                            Console.Write(".");
                     }
                 }
             }
+            Console.Write("\n");
             //Write the total count of PSMs with more than one hit into log file
             this.logFileLines.Add(String.Format("{0} at total.", this.notSingleHitCnt));
         }
 
         /// <summary>
-        ///  calculate channel ratios of psms and returns a list 
+        /// Calculates ratio of each channel for a PSM and returns a list of ratios
         /// </summary>
         private List<double> CalRatio(List<double> intenLi)
         {
@@ -403,8 +415,10 @@ namespace FPF
         }
 
         /// <summary>
-        /// Given channel ratios from a set of PSMs, then return a list containing PSMs' euclidean distance with other PSMs in the set
+        /// Given channel ratios from a set of PSMs, then return a list containing the euclidean distance of each PSM
         /// </summary>
+        /// <param name="psmsRatioLi">An array containing ratios from a set of PSMs. Each row is a PSM.</param>
+        /// <returns>A list containing euclidean distances of all PSMs from the input set</returns>
         private List<double> GetEuDistFromRatio(List<List<double>> psmsRatioLi, List<double> psmsTotalRatioLi)
         {
             List<double> euDistLi = new List<double>();
@@ -416,42 +430,62 @@ namespace FPF
 
             //Store average ratio for each channel for all PSMs in protein
             List<double> avgRatioLi = new List<double>();
-            for (int i = 0; i < this.parametersObj.ChannelCnt - 1; i++)
+            for (int i = 0; i < parametersObj.ChannelCnt - 1; i++)
                 avgRatioLi.Add(psmsTotalRatioLi[i] / psmsRatioLi.Count);
 
-            //calculate euclidean for each psm
+            //calculate center distance for each psm
             for (int i = 0; i < psmsRatioLi.Count; i++)
             {
-                double dist = 0.0;
-                for (int j = 0; j < this.parametersObj.ChannelCnt - 1; j++)//For each channel
+                double dist = 0;
+                for (int j = 0; j < parametersObj.ChannelCnt - 1; j++)//For each channel
                 {
                     //avgOtherRatio: For a single channel, avg ratio of other PSMs (except the current PSM) in this protein
                     double avgOtherRatio = (psmsTotalRatioLi[j] - psmsRatioLi[i][j]) / (psmsRatioLi.Count - 1);
-                    double d = Math.Abs((psmsRatioLi[i][j] - avgOtherRatio) / avgRatioLi[j]);
-                    dist += Math.Pow(d, 2);
+                    if (avgRatioLi[j] == 0)
+                        dist += 0;
+                    else
+                    {
+                        double d = Math.Abs((psmsRatioLi[i][j] - avgOtherRatio) / avgRatioLi[j]);
+                        dist += Math.Pow(d, 2);
+                    }
                 }
-                dist = Math.Round(Math.Sqrt(dist),4);
+                dist = Math.Round(Math.Sqrt(dist), 4);
                 euDistLi.Add(dist);
             }
             return euDistLi;
         }
 
         /// <summary>
-        /// Calculates euclidean distance of all PSMs in the database+spectaST search iprophet file
+        /// Calculates euclidean distance of all valid PSMs in the DB + SL iprophet file
         /// </summary>
         private void CalEuDist()
         {
-            Console.WriteLine("Calculating euclidean distance...");
+            Console.Write("Calculating euclidean distance");
+            int protCnt = 0;
+
+            //Lists for intra-protein euclidean distance 
+            List<string> psmsInProtNameLi = new List<string>(); //Stores all names of PSMs in this protein
+            List<List<double>> psmsInProtRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in this protein
+            List<double> psmsInProtTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in this protein for further use
+            List<string> singlePsmPepNameLi = new List<string>(); //If peptide only contains a single PSM, store the PSM name here
+            List<List<double>> singlePsmPepRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in singlePsmPepNameLi
+            List<double> singlePsmPepTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in singlePsmPepNameLi
+
+            //Lists for intra-peptide euclidean distance
+            List<string> psmsInPepNameLi = new List<string>(); //Stores all names of PSMs in this peptide
+            List<List<double>> psmsInPepRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in this peptide
+            List<double> psmsInPepTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in this peptide for further use
+
             foreach (KeyValuePair<string, ds_Protein> prot in dataContainerObj.iproDbSpstResult.Protein_Dic)
             {
-                //Lists for intra-protein euclidean distance 
-                List<string> psmsInProtNameLi = new List<string>(); //Stores all names of PSMs in this protein
-                List<List<double>> psmsInProtRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in this protein
-                List<double> psmsInProtTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in this protein for further use
-                List<string> singlePsmPepNameLi = new List<string>(); //If peptide only contains a single PSM, store the PSM name here
-                List<List<double>> singlePsmPepRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in singlePsmPepNameLi
-                List<double> singlePsmPepTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in singlePsmPepNameLi
-                for (int i = 0; i < this.parametersObj.ChannelCnt - 1; i++)
+                protCnt++;
+                //Write to console
+                if (protCnt % 1000 == 0)
+                    Console.Write(protCnt);
+                else if (protCnt % 100 == 0)
+                    Console.Write(".");
+
+                for (int i = 0; i < parametersObj.ChannelCnt - 1; i++)
                 {
                     psmsInProtTotalRatioLi.Add(0.0);
                     singlePsmPepTotalRatioLi.Add(0.0);
@@ -459,11 +493,7 @@ namespace FPF
 
                 foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
                 {
-                    //Lists for intra-peptide euclidean distance
-                    List<string> psmsInPepNameLi = new List<string>(); //Stores all names of PSMs in this peptide
-                    List<List<double>> psmsInPepRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in this peptide
-                    List<double> psmsInPepTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in this peptide for further use
-                    for (int i = 0; i < this.parametersObj.ChannelCnt - 1; i++)
+                    for (int i = 0; i < parametersObj.ChannelCnt - 1; i++)
                         psmsInPepTotalRatioLi.Add(0.0);
 
                     foreach (ds_PSM psm in pep.Value.PsmList)
@@ -483,7 +513,7 @@ namespace FPF
                         psmsInProtRatioLi.Add(psmNormRatioLi);
 
                         //Add ratio to total ratio
-                        for (int i = 0; i < this.parametersObj.ChannelCnt - 1; i++)
+                        for (int i = 0; i < parametersObj.ChannelCnt - 1; i++)
                         {
                             psmsInPepTotalRatioLi[i] += psmNormRatioLi[i];
                             psmsInProtTotalRatioLi[i] += psmNormRatioLi[i];
@@ -498,27 +528,27 @@ namespace FPF
                     {
                         singlePsmPepNameLi.Add(psmsInPepNameLi[0]);
                         singlePsmPepRatioLi.Add(psmsInPepRatioLi[0]);
-                        for (int i = 0; i < this.parametersObj.ChannelCnt - 1; i++)
+                        for (int i = 0; i < parametersObj.ChannelCnt - 1; i++)
                             singlePsmPepTotalRatioLi[i] += psmsInPepTotalRatioLi[i];
                     }
                     else  //There are more than one psms in the list
                     {
                         intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
                         for (int i = 0; i < psmsInPepNameLi.Count; i++)
-                        {
                             this.dataContainerObj.dbSpstPsmFFDic[psmsInPepNameLi[i]].IntraPepEuDist = intraPepEuDistLi[i];
-                        }
                     }
+
+                    psmsInPepNameLi.Clear();
+                    psmsInPepRatioLi.Clear();
+                    psmsInPepTotalRatioLi.Clear();
                 }
 
                 //Calculate intra-protein euclidean distance and store to dictionary
-                List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
                 if (psmsInProtNameLi.Count == 0)
                     continue;
+                List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
                 for (int i = 0; i < psmsInProtNameLi.Count; i++)
-                {
                     this.dataContainerObj.dbSpstPsmFFDic[psmsInProtNameLi[i]].IntraProtEuDist = intraProtEuDistLi[i];
-                }
 
                 //Calculate intra-peptide euclidean distance for peptides with only one PSM and store to dictionary
                 if (singlePsmPepNameLi.Count == 0)
@@ -531,12 +561,21 @@ namespace FPF
                     for (int i = 0; i < singlePsmPepNameLi.Count; i++)
                         this.dataContainerObj.dbSpstPsmFFDic[singlePsmPepNameLi[i]].IntraPepEuDist = singlePsmIntraPepEuDistLi[i];
                 }
+
+                //Clean lists
+                psmsInProtNameLi.Clear();
+                singlePsmPepNameLi.Clear();
+                psmsInProtRatioLi.Clear();
+                singlePsmPepRatioLi.Clear();
+                psmsInProtTotalRatioLi.Clear();
+                singlePsmPepTotalRatioLi.Clear();
             }
+            Console.Write("\n");
             return;
         }
 
         /// <summary>
-        /// Read database + spectraST search iprophet file, filter and write to new file
+        /// Reads DB + SL iprophet file, filter by features and write to new file
         /// </summary>
         private void FilterDbSpstIproFile()
         {
@@ -607,18 +646,16 @@ namespace FPF
             {
                 if (msmsRunReader.Name == "msms_run_summary") //itself
                     msmsRunReader.Read();
-
-                if (msmsRunReader.Name == "spectrum_query") //filter PSMs
+                else if (msmsRunReader.Name == "spectrum_query") //filter PSMs
                 {
                     string psmName = msmsRunReader.GetAttribute("spectrum");
                     if (FilterPsm(psmName) == false)
                         modIproDbSpstWriter.WriteNode(msmsRunReader, false);
                     else
                         msmsRunReader.Skip();
-                    continue;               
+                    continue;
                 }
-
-                if (msmsRunReader.EOF == true)
+                else if (msmsRunReader.EOF == true)
                     break;
                 else //Other elements in msms_run_summary
                     modIproDbSpstWriter.WriteNode(msmsRunReader, false);
@@ -642,13 +679,13 @@ namespace FPF
             if (this.dataContainerObj.dbPsmIdLi.Contains(psmName))
                 return false;
 
-            this.consideredCnt ++;
-
+            this.consideredCnt++;
+           
             //Filtering for every feature
-            //Console.WriteLine(String.Format("{0}: added PSM", psmName));
             this.dataContainerObj.dbSpstPsmFFDic.TryGetValue(psmName, out ds_Psm_ForFilter psmInfoObj);
             double featValue;
             bool b_noSpstFeat = false;
+            bool isFilteredOut = false;
             foreach (KeyValuePair<string, List<(double lowerLim, double upperLim)>> filtsForOneFeat in filtersObj.FiltDic)
             {
                 switch (filtsForOneFeat.Key)
@@ -660,7 +697,7 @@ namespace FPF
                         featValue = psmInfoObj.Mass;
                         break;
                     case "Peptide Length":
-                        featValue = (double)psmInfoObj.Peplen;
+                        featValue = (double) psmInfoObj.Peplen;
                         break;
                     case "Average Reporter Ion Intensity":
                         featValue = psmInfoObj.AvgInten;
@@ -710,7 +747,7 @@ namespace FPF
                     b_noSpstFeat = true;
                     continue;
                 }
-                else if (featValue == -1) //Dealing with PSMs with missing reporter ion intensity (will not consider avg intenstiy / euclidean distances)
+                else if (featValue == -1000) //Dealing with PSMs with missing reporter ion intensity (will not consider avg intenstiy / euclidean distances)
                     continue;
                 else
                 {
@@ -718,9 +755,9 @@ namespace FPF
                     foreach ((double lowerLim, double upperLim) filtRange in filtsForOneFeat.Value)
                     {
                         if ((featValue >= filtRange.lowerLim) && (featValue < filtRange.upperLim))
-                        {
-                            this.filteredOutCnt++;
-                            return true;
+                        { 
+                            isFilteredOut = true;
+                            break;
                         }
                     }
                 }
@@ -733,7 +770,12 @@ namespace FPF
                 this.noSpstFeatCnt++;
             }
 
-            return false;
+            if (psmInfoObj.IntraPepEuDist == -1000 && isFilteredOut == true)
+                this.zeroIntenCnt++;
+
+            if (isFilteredOut == true)
+                this.filteredOutCnt++;
+            return isFilteredOut;
         }
 
         /// <summary>
