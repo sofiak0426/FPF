@@ -7,24 +7,23 @@ namespace FPF
 {
     class ds_Norm
     {
-        private List<double> _bgNormRatioLi = new List<double>(); //List storing the ratio that each channel should multiply by during normalization (obtained from median reporter ion intensity of each channel)
-        private List<(string, string)> _bgNormKeyLi = new List<(string, string)>(); //Specify protein-ID keywords to identify background proteins. Key: "PRE" for prefixes and "SUF" for suffixes; Value: the protein-name keyword
-
+        private List<double> _bgNormFactorLi = new List<double>(); //List storing the ratio that each channel should multiply by during normalization (obtained from median reporter ion intensity of each channel)
+        private List<(string, string)> _bgNormKeywordLi = new List<(string, string)>(); //Specify protein-ID keywords to identify background proteins. 0: "PRE" for prefixes and "SUF" for suffixes; 1: the protein-name keyword
 
         /// <summary>
-        /// Adding background prefixes or suffixes to _bgNormKeyLi
+        /// Adding background prefixes or suffixes to _bgNormKeywordLi
         /// </summary>
-        /// <param name="bgProtKeyArr">Array of strings containing background protein keywords from parameter file</param>
-        public void AddBgProtKey(String[] bgProtKeyArr)
+        /// <param name="bgProtNameKeywordArr">Array of strings containing background protein keywords from parameter file</param>
+        public void AddBgProtKeyword(String[] bgProtNameKeywordArr)
         {
-            foreach (string bgProtKeyStr in bgProtKeyArr)
+            foreach (string bgProtNameKeywordStr in bgProtNameKeywordArr)
             {
-                if (bgProtKeyStr.EndsWith('-') && !bgProtKeyStr.StartsWith('-')) //Prefix
-                    this._bgNormKeyLi.Add(("PRE", bgProtKeyStr.Substring(0, bgProtKeyStr.Length - 1)));
-                else if (bgProtKeyStr.StartsWith('-')) //Suffix
-                    this._bgNormKeyLi.Add(("SUF", bgProtKeyStr.Substring(1)));
+                if (bgProtNameKeywordStr.EndsWith('-') && !bgProtNameKeywordStr.StartsWith('-')) //Prefix
+                    this._bgNormKeywordLi.Add(("PRE", bgProtNameKeywordStr.Substring(0, bgProtNameKeywordStr.Length - 1)));
+                else if (bgProtNameKeywordStr.StartsWith('-')) //Suffix
+                    this._bgNormKeywordLi.Add(("SUF", bgProtNameKeywordStr.Substring(1)));
                 else
-                    throw new ApplicationException(String.Format("Error: you specified background keywords in the wrong format: {0}", bgProtKeyStr));
+                    throw new ApplicationException(String.Format("Error: you specified background keywords in the wrong format: {0}", bgProtNameKeywordStr));
             }           
         }
 
@@ -34,10 +33,10 @@ namespace FPF
         public void GetChannelMed(ds_Parameters parametersObj, ds_SearchResult dbSearchResult)
         {
             //Check if normalization is needed; if not, specify normalization ratios to 1 and return
-            if (this._bgNormKeyLi.Count == 0)
+            if (this._bgNormKeywordLi.Count == 0)
             {
                 for (int i = 0; i < parametersObj.ChannelCnt - 1; i++)
-                    _bgNormRatioLi.Add(1.0);
+                    _bgNormFactorLi.Add(1.0);
                 return;
             }
 
@@ -52,7 +51,7 @@ namespace FPF
             {
                 //check if the protein is a background protein
                 bool isBg = false;
-                foreach ((string ind, string key) bgProtKey in this._bgNormKeyLi)
+                foreach ((string ind, string key) bgProtKey in this._bgNormKeywordLi)
                 {
                     if (bgProtKey.ind == "PRE" && prot.Key.StartsWith(bgProtKey.key)) //prefix
                     {
@@ -93,11 +92,11 @@ namespace FPF
                 chanMedLi.Add(median);
             }
 
-            //Calculate normalization ratio
+            //Calculate normalization factor
             for (int i = 0; i < parametersObj.ChannelCnt; i++)
             {
                 if (i != parametersObj.RefChannel - 1)
-                    this._bgNormRatioLi.Add(chanMedLi[parametersObj.RefChannel - 1] / chanMedLi[i]);
+                    this._bgNormFactorLi.Add(chanMedLi[parametersObj.RefChannel - 1] / chanMedLi[i]);
             }
         }
 
@@ -116,7 +115,7 @@ namespace FPF
                     psmNormIntenLi.Add(psmOrigIntenLi[i]);
                 else
                 {
-                    psmNormIntenLi.Add(psmOrigIntenLi[i] * _bgNormRatioLi[ratioIndex]);
+                    psmNormIntenLi.Add(psmOrigIntenLi[i] * _bgNormFactorLi[ratioIndex]);
                     ratioIndex++;
                 }
             }

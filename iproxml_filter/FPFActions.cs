@@ -18,6 +18,7 @@ namespace FPF
         private ds_DataContainer dataContainerObj;
         private ds_Filters filtersObj;
         private ds_Norm normObj;
+        private Dictionary<string, List<string>> psmSatisfyFeatDic = new Dictionary<string, List<string>>();
 
         //For log file and console log
         private List<string> logFileLines; //Content of log file
@@ -76,7 +77,7 @@ namespace FPF
 
             //Collect PSM information, calculate distances and filter
             this.CollectPsmFF_FromProtein_Dic();
-            this.CalEuDist();
+            this.CalOverallEuDist();
             this.FilterDbSpstIproFile();
 
             //Write to log file and console
@@ -166,7 +167,7 @@ namespace FPF
                         if (lineElementsArr[1].ToLower() != "none")
                         {
                             string[] bgKeyArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
-                            this.normObj.AddBgProtKey(bgKeyArr); //Add background keywords to the object
+                            this.normObj.AddBgProtKeyword(bgKeyArr); //Add background keywords to the object
                         }
                         break;
                     default: //Add feature
@@ -195,7 +196,7 @@ namespace FPF
         /// Adds user-specified filters for each feature to filterObj for further use.
         /// </summary>
         /// <param name="feature"> Feature name</param>
-        /// <param name="filterStr"> The string containing filters for a single filter, read from the param file</param>
+        /// <param name="filterStr"> The string containing filters for a single filter, read from the param file, e.g. 0.6-1 </param>
         private void AddFilters(string feature, string filterStr)
         {
             //If the user did not specify filters of this feature
@@ -415,7 +416,8 @@ namespace FPF
         }
 
         /// <summary>
-        /// Given channel ratios from a set of PSMs, then return a list containing the euclidean distance of each PSM
+        /// Given channel ratios from a set of PSMs (can be from a peptide or protein), then return a list containing the euclidean distance of each PSM
+        /// Euclidean distance is the distance between the PSM and the average of other n-1 PSM ratios in the set.
         /// </summary>
         /// <param name="psmsRatioLi">An array containing ratios from a set of PSMs. Each row is a PSM.</param>
         /// <returns>A list containing euclidean distances of all PSMs from the input set</returns>
@@ -456,9 +458,9 @@ namespace FPF
         }
 
         /// <summary>
-        /// Calculates euclidean distance of all valid PSMs in the DB + SL iprophet file
+        /// Calculates intra-peptide and intra-protein euclidean distances of all valid PSMs in the DB + SL iprophet file
         /// </summary>
-        private void CalEuDist()
+        private void CalOverallEuDist()
         {
             Console.Write("Calculating euclidean distance");
             int protCnt = 0;
@@ -649,7 +651,7 @@ namespace FPF
                 else if (msmsRunReader.Name == "spectrum_query") //filter PSMs
                 {
                     string psmName = msmsRunReader.GetAttribute("spectrum");
-                    if (FilterPsm(psmName) == false)
+                    if (IsToBeFiltered(psmName) == false)
                         modIproDbSpstWriter.WriteNode(msmsRunReader, false);
                     else
                         msmsRunReader.Skip();
@@ -669,7 +671,7 @@ namespace FPF
         /// </summary>
         /// <param name="psmName">Name for the current PSM</param>
         /// <returns></returns>
-        private bool FilterPsm(string psmName)
+        private bool IsToBeFiltered(string psmName)
         {
             //If the PSM need not to be considered (FDR too small / shared peptide / decoy / etc.)
             if (!this.dataContainerObj.dbSpstPsmFFDic.ContainsKey(psmName))
