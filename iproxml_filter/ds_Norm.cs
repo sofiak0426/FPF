@@ -22,6 +22,10 @@ namespace FPF
                     this._bgNormKeywordLi.Add(("PRE", bgProtNameKeywordStr.Substring(0, bgProtNameKeywordStr.Length - 1)));
                 else if (bgProtNameKeywordStr.StartsWith('-')) //Suffix
                     this._bgNormKeywordLi.Add(("SUF", bgProtNameKeywordStr.Substring(1)));
+                else if (bgProtNameKeywordStr.ToLower() == "all")
+                {
+                    this._bgNormKeywordLi.Add(("all", "all"));
+                }
                 else
                     throw new ApplicationException(String.Format("Error: you specified background keywords in the wrong format: {0}", bgProtNameKeywordStr));
             }           
@@ -51,14 +55,19 @@ namespace FPF
             {
                 //check if the protein is a background protein
                 bool isBg = false;
-                foreach ((string ind, string key) bgProtKey in this._bgNormKeywordLi)
+                foreach ((string ind, string keyword) bgProtKeyword in this._bgNormKeywordLi)
                 {
-                    if (bgProtKey.ind == "PRE" && prot.Key.StartsWith(bgProtKey.key)) //prefix
+                    if (bgProtKeyword.ind == "PRE" && prot.Key.StartsWith(bgProtKeyword.keyword)) //prefix
                     {
                         isBg = true;
                         break;
                     }
-                    else if (bgProtKey.ind == "SUF" && prot.Key.EndsWith(bgProtKey.key)) //suffix
+                    else if (bgProtKeyword.ind == "SUF" && prot.Key.EndsWith(bgProtKeyword.keyword)) //suffix
+                    {
+                        isBg = true;
+                        break;
+                    }
+                    else if(bgProtKeyword.ind == "all")
                     {
                         isBg = true;
                         break;
@@ -97,6 +106,8 @@ namespace FPF
             {
                 if (i != parametersObj.RefChannel - 1)
                     this._bgNormFactorLi.Add(chanMedLi[parametersObj.RefChannel - 1] / chanMedLi[i]);
+                else
+                    this._bgNormFactorLi.Add(1);
             }
         }
 
@@ -108,17 +119,8 @@ namespace FPF
         public List<double> GetNormIntenLi(ds_Parameters parametersObj, List<double> psmOrigIntenLi)
         {
             List<double> psmNormIntenLi = new List<double>();
-            int ratioIndex = 0;
             for (int i = 0; i < parametersObj.ChannelCnt; i++)
-            {
-                if (i == parametersObj.RefChannel - 1) //reference channel
-                    psmNormIntenLi.Add(psmOrigIntenLi[i]);
-                else
-                {
-                    psmNormIntenLi.Add(psmOrigIntenLi[i] * _bgNormFactorLi[ratioIndex]);
-                    ratioIndex++;
-                }
-            }
+                psmNormIntenLi.Add(psmOrigIntenLi[i] * _bgNormFactorLi[i]);
             return psmNormIntenLi;
         }
     }

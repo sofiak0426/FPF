@@ -1,15 +1,15 @@
 {
   "format": 1,
   "restore": {
-    "C:\\iproxml_filter\\iproxml_filter\\iproxml_filter.csproj": {}
+    "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj": {}
   },
   "projects": {
-    "C:\\iproxml_filter\\iproxml_filter\\iproxml_filter.csproj": {
+    "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\iproxml_filter\\iproxml_filter\\iproxml_filter.csproj",
-        "projectName": "iproxml_filter",
-        "projectPath": "C:\\iproxml_filter\\iproxml_filter\\iproxml_filter.csproj",
+        "projectUniqueName": "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj",
+        "projectName": "FPF",
+        "projectPath": "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj",
         "packagesPath": "C:\\Users\\powuser\\.nuget\\packages\\",
         "outputPath": "C:\\iproxml_filter\\iproxml_filter\\obj\\",
         "projectStyle": "PackageReference",

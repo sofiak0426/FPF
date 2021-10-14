@@ -6,6 +6,9 @@ namespace FPF
 
     public class ds_Filters
     {
+        public int featNum = 16;
+        public int featMeetingCritNumCutoff = 2;
+
         //A dictionary that stores whether each feature in the filter is specified by user or not
         //Key: Feature name in param file; Value: if the param is specified by the user
         private Dictionary<string, bool> _featureIsSetDic = new Dictionary<string, bool>{

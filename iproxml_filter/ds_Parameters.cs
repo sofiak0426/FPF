@@ -18,7 +18,8 @@ namespace FPF
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
             {"Database Iprophet Search File", false},
             {"Database + SpectraST Iprophet Search File", false},
-            {"Output File", false},
+            {"Output Iprophet File", false},
+            {"Output Csv File for Filtered-out PSMs", false},
             {"Number of Channels", false},
             {"Reference Channel", false},
             {"Decoy Prefix", false},

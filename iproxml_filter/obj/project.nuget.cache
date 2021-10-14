@@ -1,10 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "UQyY2avsmAL/Ml1mGYinpypuj9dAvHN3LCYIYS9+XGg3sFZeFwc/d5QvHFh41FTzIg9ZYB2MGYsbEKcxrNdvZQ==",
+  "dgSpecHash": "OSMH/goDo+aSHCdalvrGZTDHvQIfQSQlAI3NnjTnipMiKhY2hwtE3HUfW45VzxRumWIeXQ2hwo9Qp5ScXiD5CA==",
   "success": true,
-  "projectFilePath": "/Users/kzy89426/intern/quant_analysis/iproxml_filter/iproxml_filter/iproxml_filter/iproxml_filter.csproj",
-  "expectedPackageFiles": [
-    "/Users/kzy89426/.nuget/packages/microsoft.aspnetcore.app.ref/3.1.10/microsoft.aspnetcore.app.ref.3.1.10.nupkg.sha512"
-  ],
+  "projectFilePath": "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj",
+  "expectedPackageFiles": [],
   "logs": []
 }

@@ -18,6 +18,7 @@ namespace FPF
         private ds_DataContainer dataContainerObj;
         private ds_Filters filtersObj;
         private ds_Norm normObj;
+        private ds_FilteredOutPsms filteredOutPsmsObj;
         private Dictionary<string, List<string>> psmSatisfyFeatDic = new Dictionary<string, List<string>>();
 
         //For log file and console log
@@ -64,6 +65,7 @@ namespace FPF
             this.filtersObj = new ds_Filters();
             this.parametersObj = new ds_Parameters();
             this.normObj = new ds_Norm();
+            this.filteredOutPsmsObj = new ds_FilteredOutPsms(filtersObj.featNum);
             this.logFileLines = new List<string>() {"Warning: PSM with more than one hit:"};
 
             //Read parameters file
@@ -80,10 +82,15 @@ namespace FPF
             this.CalOverallEuDist();
             this.FilterDbSpstIproFile();
 
+            //Write result to filteredoutFile
+            this.filteredOutPsmsObj.FilteredOutPsmsToFile();
+
             //Write to log file and console
             logFile = GetLogFileName();
-            File.WriteAllLines(this.mainDir + logFile, logFileLines);        
+            File.WriteAllLines(this.mainDir + logFile, logFileLines);
+            Console.WriteLine("-------------------");
             Console.WriteLine(String.Format("FPF actions done! Examined: {0} PSMs, filtered out: {1} PSMs", consideredCnt, filteredOutCnt));
+            this.filteredOutPsmsObj.MeetingCritNumPsmCntToConosle();
             Console.WriteLine(zeroIntenCnt);
             return;       
         }
@@ -143,8 +150,11 @@ namespace FPF
                     case "Database + SpectraST Iprophet Search File":
                         this.parametersObj.IproDbSpstFile = lineElementsArr[1];
                         break;
-                    case "Output File":
+                    case "Output Iprophet File":
                         this.parametersObj.ModIproDbSpstFile = lineElementsArr[1];
+                        break;
+                    case "Output Csv File for Filtered-out PSMs":
+                        this.filteredOutPsmsObj.FilteredOutFile = this.mainDir + lineElementsArr[1];
                         break;
                     case "Number of Channels":
                         if (int.TryParse(lineElementsArr[1], out int channelCnt) == false)
@@ -304,6 +314,9 @@ namespace FPF
 
             //Calculate ratio for normalization
             this.normObj.GetChannelMed(this.parametersObj, this.dataContainerObj.iproDbResult);
+
+            //Print DB PSM count
+            Console.WriteLine(String.Format("Number of Valid PSMs in database iprophet file: {0}", this.dataContainerObj.dbPsmIdLi.Count()));
             return;
         }
 
@@ -371,7 +384,7 @@ namespace FPF
                         if (int_isValid != 0) //Without missing intensity
                         {
                             List<double> psmNormIntenLi = this.normObj.GetNormIntenLi(this.parametersObj, psm.libra_ChanIntenDi.Values.ToList());
-                            psmInfoObj.AvgInten = psmNormIntenLi.Average();
+                            psmInfoObj.AvgInten = Math.Round(psmNormIntenLi.Average(),4);
                         }
 
                         //Add information to dbSpstPsmFFDic if the current hit is the only hit for this PSM.
@@ -395,6 +408,7 @@ namespace FPF
                 }
             }
             Console.Write("\n");
+            Console.WriteLine(String.Format("Number of Valid PSMs in database + spectraST iprophet file: {0}", this.dataContainerObj.dbSpstPsmFFDic.Count()));
             //Write the total count of PSMs with more than one hit into log file
             this.logFileLines.Add(String.Format("{0} at total.", this.notSingleHitCnt));
         }
@@ -687,7 +701,8 @@ namespace FPF
             this.dataContainerObj.dbSpstPsmFFDic.TryGetValue(psmName, out ds_Psm_ForFilter psmInfoObj);
             double featValue;
             bool b_noSpstFeat = false;
-            bool isFilteredOut = false;
+            int featMeetCritCnt = 0;
+            Dictionary<string, string> featMeetingCriteriaDic = new Dictionary<string, string>();
             foreach (KeyValuePair<string, List<(double lowerLim, double upperLim)>> filtsForOneFeat in filtersObj.FiltDic)
             {
                 switch (filtsForOneFeat.Key)
@@ -749,7 +764,7 @@ namespace FPF
                     b_noSpstFeat = true;
                     continue;
                 }
-                else if (featValue == -1000) //Dealing with PSMs with missing reporter ion intensity (will not consider avg intenstiy / euclidean distances)
+                else if (featValue == -1000) //Dealing with PSMs with missing reporter ion intensity (will not consider avg intensity / euclidean distances)
                     continue;
                 else
                 {
@@ -757,8 +772,9 @@ namespace FPF
                     foreach ((double lowerLim, double upperLim) filtRange in filtsForOneFeat.Value)
                     {
                         if ((featValue >= filtRange.lowerLim) && (featValue < filtRange.upperLim))
-                        { 
-                            isFilteredOut = true;
+                        {
+                            featMeetingCriteriaDic.Add(filtsForOneFeat.Key, featValue.ToString());
+                            featMeetCritCnt++;
                             break;
                         }
                     }
@@ -772,12 +788,19 @@ namespace FPF
                 this.noSpstFeatCnt++;
             }
 
-            if (psmInfoObj.IntraPepEuDist == -1000 && isFilteredOut == true)
+            if (psmInfoObj.IntraPepEuDist == -1000 && featMeetCritCnt >= this.filtersObj.featMeetingCritNumCutoff)
                 this.zeroIntenCnt++;
 
-            if (isFilteredOut == true)
+            if(featMeetCritCnt > 0)
+                this.filteredOutPsmsObj.AddFilteredOutPsm(psmName, featMeetingCriteriaDic);
+
+            if (featMeetCritCnt >= this.filtersObj.featMeetingCritNumCutoff)
+            {                
                 this.filteredOutCnt++;
-            return isFilteredOut;
+                return true;
+            }
+            else
+                return false;
         }
 
         /// <summary>
