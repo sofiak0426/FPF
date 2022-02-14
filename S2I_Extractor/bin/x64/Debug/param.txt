@@ -1,0 +1,6 @@
+dataFolder=F:/labeling quantification/UBasel
+dataType=Profile
+centroidWinSize=0.04
+isolationWinSize=1.2
+precursorMzTol=0.02
+precursorIsotopicPeakMzTol=0.02

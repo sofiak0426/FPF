@@ -1,0 +1,13 @@
+C:\S2I_Filter\S2I_Extractor\bin\Debug\netcoreapp3.0\S2I_Extractor.deps.json
+C:\S2I_Filter\S2I_Extractor\bin\Debug\netcoreapp3.0\S2I_Extractor.dll
+C:\S2I_Filter\S2I_Extractor\bin\Debug\netcoreapp3.0\S2I_Extractor.pdb
+C:\S2I_Filter\S2I_Extractor\bin\Debug\netcoreapp3.0\ICSharpCode.SharpZipLib.dll
+C:\S2I_Filter\S2I_Extractor\bin\Debug\netcoreapp3.0\Ionic.Zlib.dll
+C:\S2I_Filter\S2I_Extractor\bin\Debug\netcoreapp3.0\MSDataStructure.dll
+C:\S2I_Filter\S2I_Extractor\bin\Debug\netcoreapp3.0\MSProcessor.dll
+C:\S2I_Filter\S2I_Extractor\bin\Debug\netcoreapp3.0\MSReader.dll
+C:\S2I_Filter\S2I_Extractor\obj\Debug\netcoreapp3.0\S2I_Extractor.csprojAssemblyReference.cache
+C:\S2I_Filter\S2I_Extractor\obj\Debug\netcoreapp3.0\S2I_Extractor.csproj.CoreCompileInputs.cache
+C:\S2I_Filter\S2I_Extractor\obj\Debug\netcoreapp3.0\S2I_Extractor.csproj.CopyComplete
+C:\S2I_Filter\S2I_Extractor\obj\Debug\netcoreapp3.0\S2I_Extractor.dll
+C:\S2I_Filter\S2I_Extractor\obj\Debug\netcoreapp3.0\S2I_Extractor.pdb

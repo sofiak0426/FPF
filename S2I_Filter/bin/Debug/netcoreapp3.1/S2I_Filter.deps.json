@@ -1,0 +1,88 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v3.1",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v3.1": {
+      "S2I_Filter/1.0.0": {
+        "dependencies": {
+          "S2I_Extractor": "1.0.0"
+        },
+        "runtime": {
+          "S2I_Filter.dll": {}
+        }
+      },
+      "S2I_Extractor/1.0.0": {
+        "runtime": {
+          "S2I_Extractor.exe": {}
+        }
+      },
+      "MSDataStructure/1.0.0.0": {
+        "runtime": {
+          "MSDataStructure.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "MSReader/1.0.0.0": {
+        "runtime": {
+          "MSReader.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "MSProcessor/1.0.0.0": {
+        "runtime": {
+          "MSProcessor.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Ionic.Zlib/1.9.1.5": {
+        "runtime": {
+          "Ionic.Zlib.dll": {
+            "assemblyVersion": "1.9.1.5",
+            "fileVersion": "1.9.1.5"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "S2I_Filter/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "S2I_Extractor/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MSDataStructure/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MSReader/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MSProcessor/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Ionic.Zlib/1.9.1.5": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
