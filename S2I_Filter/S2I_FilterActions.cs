@@ -10,21 +10,31 @@ namespace S2I_Filter
 {
     public class S2I_FilterActions
     {
-        public ds_Parameters paramsObj;
-        public Dictionary <string, ds_MS2Info> ms2InfoDic;
+        public ds_Parameters paramsObj; //Object that stores all parameters
+        public Dictionary <string, ds_MS2Info> ms2InfoDic; //Dictionary that stores all PSMs and their S2Is, extracted from the mzML files
 
-        public void MainActions(string[] args) //arg: dataDir + param file name or -help
+        /// <summary>
+        /// Main actions performed by S2I_Filter.
+        /// 1. Reads the parameter file;
+        /// 2. Extracts S2I from all mzML files available in the data directory with S2I_Extractor;
+        /// 3. Parses through the input iProphet file and remove PSMs with S2I lower than threshold.
+        /// </summary>
+        /// <param name="args">Can be arg[0] = dataDir, arg[1] = param file name</param>
+        public void MainActions(string[] args)
         {
+            if (args.Length != 2)
+                throw new ArgumentException("Please specify two arguments: the data directory and the parameter file name.");
+            
             //Read Params
-            if (this.ReadParamFile(args) == false)
-                return;
+            this.ReadParamFile(args);
 
-            //Start Program
             Stopwatch programWatch = new Stopwatch();
             programWatch.Start();
 
             //Extract S2I
             this.Extract_S2I();
+
+            //Filter iProphet file
             this.FilterIproByS2I();
  
             programWatch.Stop();
@@ -32,35 +42,25 @@ namespace S2I_Filter
             return;
         }
 
-        public bool ReadParamFile(string[] arg) //arg[0]: dataDir; arg[1]: param file name
+        /// <summary>
+        /// Parses the parameters or provide help to the user.
+        /// </summary>
+        /// <param name="args">Can be arg[0] = dataDir, arg[1] = param file name</param>
+        /// <returns>True if the parameter file is successfully parsed; otherwise false</returns>
+        public void ReadParamFile(string[] args) 
         {
-            //Read parameter file
-            if (arg.Length == 0)
-                return false;
+            if (!File.Exists(Path.Combine(args[0],args[1])))
+                throw new ApplicationException("Parameter file not found...");
 
-            if (arg[0].Equals("help", StringComparison.OrdinalIgnoreCase) || arg[0].Equals("-help", StringComparison.OrdinalIgnoreCase))
-            {
-                ds_Parameters.Help();
-                return false;
-            }
-
-            if (!File.Exists(Path.Combine(arg[0],arg[1])))
-            {
-                Console.WriteLine("Parameter file not found...");
-                ds_Parameters.Help();
-                return false;
-            }
-            this.paramsObj = new ds_Parameters(arg[0], arg[1]);
-            if (paramsObj.valid == false)
-            {
-                Console.WriteLine("Wrong paramemters...");
-                ds_Parameters.Help();
-                return false;
-            }
+            this.paramsObj = new ds_Parameters(args[0], args[1]);          
             Console.WriteLine("Parameter file detected successfully\nReading and Processing...");
-            return true;
         }
 
+        /// <summary>
+        /// Extract S2I of PSMs from all available mzML files in the data directory.
+        /// Exports a csv file containing all PSMs with their individual S2I and precursor m/z values.
+        /// Stores ms2 information of PSMs (including S2I information) into ms2InfoDic.
+        /// </summary>
         public void Extract_S2I()
         {
             ProcessMassSpectra processS2I_Obj = new ProcessMassSpectra(this.paramsObj.dataType, this.paramsObj.cenWinSize);
@@ -72,11 +72,11 @@ namespace S2I_Filter
         }
 
         /// <summary>
-        /// Reads DB + SL iprophet file, filter by features and write to new file
+        /// Reads the input iProphet file, and removes those with S2I lower than threshold.
         /// </summary>
         public void FilterIproByS2I()
         {
-            Console.WriteLine("Filtering database iProphet file and writing to new iProphet...");
+            Console.WriteLine("Filtering iProphet file and writing to new iProphet...");
             //Xml reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
             XmlReader iproDbReader = XmlReader.Create(Path.Combine(this.paramsObj.dataDir,
@@ -133,6 +133,11 @@ namespace S2I_Filter
             modIproDbWriter.Close();
         }
 
+        /// <summary>
+        /// Read the msms_run_summary section of the iProphet file
+        /// </summary>
+        /// <param name="msmsRunReader"> xml reader for the section</param>
+        /// <param name="modIproDbWriter"> output writer</param>
         private void ReadMsmsRun(XmlReader msmsRunReader, XmlWriter modIproDbWriter)
         {
             //Reader setup
@@ -146,12 +151,19 @@ namespace S2I_Filter
                 else if (msmsRunReader.Name == "spectrum_query") //filter PSMs
                 {
                     string scanID = msmsRunReader.GetAttribute("spectrum");
-                    double S2I = this.ms2InfoDic[scanID].s2i;
-                    if (S2I >= this.paramsObj.S2IThresh)
-                        modIproDbWriter.WriteNode(msmsRunReader, false);
-                    else
-                        msmsRunReader.Skip();
-                    continue;
+                    double S2I;
+                    try
+                    {
+                        S2I = this.ms2InfoDic[scanID].s2i;
+                        if (S2I >= this.paramsObj.S2IThresh)
+                            modIproDbWriter.WriteNode(msmsRunReader, false);
+                        else
+                            msmsRunReader.Skip();
+                    }
+                    catch //If the user forgets a mzML file, for instance
+                    {
+                        Console.WriteLine(String.Format("PSM {0} is not found in the current mzML files.", scanID));
+                    }
                 }
                 else if (msmsRunReader.EOF == true)
                     break;
