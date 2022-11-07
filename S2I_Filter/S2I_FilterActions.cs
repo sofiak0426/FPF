@@ -1,10 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Diagnostics;
-using S2I_Extractor;
+using S2I_Calculator;
 using System.Collections.Generic;
 using System.Xml;
-using System.Linq;
 
 namespace S2I_Filter
 {
@@ -16,7 +15,7 @@ namespace S2I_Filter
         /// <summary>
         /// Main actions performed by S2I_Filter.
         /// 1. Reads the parameter file;
-        /// 2. Extracts S2I from all mzML files available in the data directory with S2I_Extractor;
+        /// 2. Calculates S2I from all mzML files available in the data directory with S2I_Calculator;
         /// 3. Parses through the input iProphet file and remove PSMs with S2I lower than threshold.
         /// </summary>
         /// <param name="args">Can be arg[0] = dataDir, arg[1] = param file name</param>
@@ -32,7 +31,7 @@ namespace S2I_Filter
             programWatch.Start();
 
             //Extract S2I
-            this.Extract_S2I();
+            this.Calculate_S2I();
 
             //Filter iProphet file
             this.FilterIproByS2I();
@@ -49,6 +48,7 @@ namespace S2I_Filter
         /// <returns>True if the parameter file is successfully parsed; otherwise false</returns>
         public void ReadParamFile(string[] args) 
         {
+            Console.WriteLine(Path.Combine(args[0], args[1]));
             if (!File.Exists(Path.Combine(args[0],args[1])))
                 throw new ApplicationException("Parameter file not found...");
 
@@ -57,11 +57,11 @@ namespace S2I_Filter
         }
 
         /// <summary>
-        /// Extract S2I of PSMs from all available mzML files in the data directory.
+        /// Calculate S2I of PSMs from all available mzML files in the data directory.
         /// Exports a csv file containing all PSMs with their individual S2I and precursor m/z values.
         /// Stores ms2 information of PSMs (including S2I information) into ms2InfoDic.
         /// </summary>
-        public void Extract_S2I()
+        public void Calculate_S2I()
         {
             ProcessMassSpectra processS2I_Obj = new ProcessMassSpectra(this.paramsObj.dataType, this.paramsObj.cenWinSize);
             processS2I_Obj.ReadAllSpectrumFiles(this.paramsObj.rawDataLi);
@@ -72,7 +72,7 @@ namespace S2I_Filter
         }
 
         /// <summary>
-        /// Reads the input iProphet file, and removes those with S2I lower than threshold.
+        /// Reads the input iProphet file, removes those with S2I lower than threshold, and writes a new iProphet file.
         /// </summary>
         public void FilterIproByS2I()
         {

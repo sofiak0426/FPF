@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace S2I_Extractor
+namespace S2I_Calculator
 {
     public class ds_MS2Info
     {

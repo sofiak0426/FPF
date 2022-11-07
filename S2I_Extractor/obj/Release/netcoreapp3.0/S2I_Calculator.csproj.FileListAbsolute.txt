@@ -1,0 +1,13 @@
+C:\S2I_Filter\S2I_Extractor\bin\Release\netcoreapp3.0\S2I_Calculator.deps.json
+C:\S2I_Filter\S2I_Extractor\bin\Release\netcoreapp3.0\S2I_Calculator.dll
+C:\S2I_Filter\S2I_Extractor\bin\Release\netcoreapp3.0\S2I_Calculator.pdb
+C:\S2I_Filter\S2I_Extractor\bin\Release\netcoreapp3.0\ICSharpCode.SharpZipLib.dll
+C:\S2I_Filter\S2I_Extractor\bin\Release\netcoreapp3.0\Ionic.Zlib.dll
+C:\S2I_Filter\S2I_Extractor\bin\Release\netcoreapp3.0\MSDataStructure.dll
+C:\S2I_Filter\S2I_Extractor\bin\Release\netcoreapp3.0\MSProcessor.dll
+C:\S2I_Filter\S2I_Extractor\bin\Release\netcoreapp3.0\MSReader.dll
+C:\S2I_Filter\S2I_Extractor\obj\Release\netcoreapp3.0\S2I_Calculator.csprojAssemblyReference.cache
+C:\S2I_Filter\S2I_Extractor\obj\Release\netcoreapp3.0\S2I_Calculator.csproj.CoreCompileInputs.cache
+C:\S2I_Filter\S2I_Extractor\obj\Release\netcoreapp3.0\S2I_Calculator.csproj.CopyComplete
+C:\S2I_Filter\S2I_Extractor\obj\Release\netcoreapp3.0\S2I_Calculator.dll
+C:\S2I_Filter\S2I_Extractor\obj\Release\netcoreapp3.0\S2I_Calculator.pdb

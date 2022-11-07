@@ -44,8 +44,10 @@ namespace S2I_Filter
                 lineElementsArr[0] = lineElementsArr[0].Trim();
                 lineElementsArr[1] = lineElementsArr[1].Trim();
 
+
                 //Check if the parameter name is valid
                 string errorCode = String.Format("Error:" + "have you modified the parameter to \"{0}\"?", lineElementsArr[0]);
+                lineElementsArr[0] = lineElementsArr[0].ToLower();
                 if (this.ValidateParamName(lineElementsArr[0])) //If the line specifies a parameter
                 {
                     if (this.GetParamIsSet(lineElementsArr[0]) == true) //Check whether the param is specified by the user already
@@ -61,22 +63,24 @@ namespace S2I_Filter
                 //Set parameter values
                 switch (lineElementsArr[0])
                 {
-                    case "Database iProphet Search File":
+                    case "iprophet search file":
                         {
                             this.dbIproFile = lineElementsArr[1];
                             if (!File.Exists(Path.Combine(this.dataDir, this.dbIproFile)))
                                 throw new FileLoadException("The iProphet file does not exist!");
                             break;
                         }
-                    case "DataType":
+                    case "datatype":
                         {
                             this.dataType = lineElementsArr[1];
-                            if (!this.dataType.Equals("Centroid", StringComparison.OrdinalIgnoreCase) && !this.dataType.Equals("Profile", StringComparison.OrdinalIgnoreCase))
+                            if (!this.dataType.Equals("centroid", StringComparison.OrdinalIgnoreCase) && !this.dataType.Equals("profile", StringComparison.OrdinalIgnoreCase))
                                 throw new ApplicationException("Please specify dataType as either Centroid or Profile...");
                             break;
                         }
-                    case "Centroid Window Size":
+                    case "centroid window size":
                         {
+                            if (this.dataType.Equals("centroid", StringComparison.OrdinalIgnoreCase))
+                                break;
                             double winSize;
                             bool canParse = double.TryParse(lineElementsArr[1], out winSize);
                             this.cenWinSize = canParse ? winSize : 0;
@@ -84,7 +88,7 @@ namespace S2I_Filter
                                 throw new ApplicationException("Please specify centroid window size as a float number larger than 0");
                             break;
                         }
-                    case "Isolation Window Size":
+                    case "isolation window size":
                         {
                             double winSize;
                             bool canParse = double.TryParse(lineElementsArr[1], out winSize);
@@ -93,7 +97,7 @@ namespace S2I_Filter
                                 throw new ApplicationException("Please specify isolation window size as a float number larger than 0");
                             break;
                         }
-                    case "Precursor m/z Tolerance":
+                    case "precursor m/z tolerance":
                         {
                             double tol;
                             bool canParse = double.TryParse(lineElementsArr[1], out tol);
@@ -102,16 +106,16 @@ namespace S2I_Filter
                                 throw new ApplicationException("Please specify precursor m/z tolerance as a float number larger than 0");
                             break;
                         }
-                    case "Precursor Isotopic Peak m/z Tolerance":
+                    case "precursor isotopic peak m/z tolerance":
                         {
                             double tol;
                             bool canParse = double.TryParse(lineElementsArr[1], out tol);
                             this.precurIsoTol = canParse ? tol : 0;
                             if (this.precurIsoTol <= 0)
-                                throw new ApplicationException("Please specifyprecursor isotopic peak m/z tolearance as a float number larger than 0");
+                                throw new ApplicationException("Please specify precursor isotopic peak m/z tolearance as a float number larger than 0");
                             break;
                         }
-                    case "S2I Threshold":
+                    case "s2i threshold":
                         {
                             double s2i;
                             bool canParse = double.TryParse(lineElementsArr[1], out s2i);
@@ -148,13 +152,13 @@ namespace S2I_Filter
         //A dictionary that stores whether the global param values is correctly specified by user or not
         //Key: Parameter name in param file; Value: if the param is correctly specified by the user
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
-            {"Database iProphet Search File", false},
-            {"DataType", false},
-            {"Centroid Window Size", false},
-            {"Isolation Window Size", false},
-            {"Precursor m/z Tolerance", false},
-            {"Precursor Isotopic Peak m/z Tolerance", false},
-            {"S2I Threshold", false}
+            {"iprophet search file", false},
+            {"datatype", false},
+            {"centroid window size", false},
+            {"isolation window size", false},
+            {"precursor m/z tolerance", false},
+            {"precursor isotopic peak m/z tolerance", false},
+            {"s2i threshold", false}
         };
 
         /// <summary>

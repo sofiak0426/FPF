@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "7Q3u/syoy/lqKRQX+xSH2eATs0F+W+P0eN1hfsrntE605xgVFRWBdFYekVBnQhqcgKE9P3cW6flaa12odDrAAA==",
+  "success": true,
+  "projectFilePath": "C:\\S2I_Filter\\S2I_Filter\\S2I_Filter.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\system.data.datasetextensions\\4.5.0\\system.data.datasetextensions.4.5.0.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\3.1.9\\microsoft.netcore.app.runtime.win-x64.3.1.9.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\3.1.9\\microsoft.windowsdesktop.app.runtime.win-x64.3.1.9.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\3.1.9\\microsoft.aspnetcore.app.runtime.win-x64.3.1.9.nupkg.sha512"
+  ],
+  "logs": []
+}

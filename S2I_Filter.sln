@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30621.155
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "S2I_Filter", "S2I_Filter\S2I_Filter.csproj", "{EE155FFD-9536-40BA-9EE0-7C74A20C0C63}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "S2I_Extractor", "S2I_Extractor\S2I_Extractor.csproj", "{9BE703E2-A2A7-48FE-B2F2-498605370A20}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "S2I_Calculator", "S2I_Extractor\S2I_Calculator.csproj", "{9BE703E2-A2A7-48FE-B2F2-498605370A20}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

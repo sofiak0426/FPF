@@ -1,14 +1,16 @@
 {
   "version": 2,
-  "dgSpecHash": "oO+5BwVrohBEaQ+K7zqJ0h1wpEAEnukNgSyL82tlQ6XBsyWGQBxH6aXI9M9rQ1PT5Y7NYHh07DEPVHQ5dM5k/w==",
+  "dgSpecHash": "ntQci0UPq0iMyYh8S/KPVtJytnxMAxksDmeuxZAamYqbuOgJEGXq/bcyt/H+QY7S6rQhWtWcruk0Vfq2JmKrFw==",
   "success": true,
-  "projectFilePath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj",
+  "projectFilePath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\powuser\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
     "C:\\Users\\powuser\\.nuget\\packages\\system.data.datasetextensions\\4.5.0\\system.data.datasetextensions.4.5.0.nupkg.sha512",
-    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\3.0.1\\microsoft.aspnetcore.app.ref.3.0.1.nupkg.sha512",
     "C:\\Users\\powuser\\.nuget\\packages\\microsoft.netcore.app.ref\\3.0.0\\microsoft.netcore.app.ref.3.0.0.nupkg.sha512",
-    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\3.0.0\\microsoft.windowsdesktop.app.ref.3.0.0.nupkg.sha512"
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\3.0.0\\microsoft.windowsdesktop.app.ref.3.0.0.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.netcore.app.runtime.osx-x64\\3.0.3\\microsoft.netcore.app.runtime.osx-x64.3.0.3.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.osx-x64\\3.0.3\\microsoft.aspnetcore.app.runtime.osx-x64.3.0.3.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\3.0.1\\microsoft.aspnetcore.app.ref.3.0.1.nupkg.sha512"
   ],
   "logs": []
 }

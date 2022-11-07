@@ -20,6 +20,26 @@
           "lib/netstandard2.0/System.Data.DataSetExtensions.dll": {}
         }
       }
+    },
+    ".NETCoreApp,Version=v3.0/osx-x64": {
+      "Microsoft.CSharp/4.7.0": {
+        "type": "package",
+        "compile": {
+          "ref/netcoreapp2.0/_._": {}
+        },
+        "runtime": {
+          "lib/netcoreapp2.0/_._": {}
+        }
+      },
+      "System.Data.DataSetExtensions/4.5.0": {
+        "type": "package",
+        "compile": {
+          "ref/netstandard2.0/System.Data.DataSetExtensions.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/System.Data.DataSetExtensions.dll": {}
+        }
+      }
     }
   },
   "libraries": {
@@ -125,9 +145,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj",
-      "projectName": "S2I_Extractor",
-      "projectPath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj",
+      "projectUniqueName": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj",
+      "projectName": "S2I_Calculator",
+      "projectPath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj",
       "packagesPath": "C:\\Users\\powuser\\.nuget\\packages\\",
       "outputPath": "C:\\S2I_Filter\\S2I_Extractor\\obj\\",
       "projectStyle": "PackageReference",
@@ -184,8 +204,16 @@
             "version": "[3.0.1, 3.0.1]"
           },
           {
+            "name": "Microsoft.AspNetCore.App.Runtime.osx-x64",
+            "version": "[3.0.3, 3.0.3]"
+          },
+          {
             "name": "Microsoft.NETCore.App.Ref",
             "version": "[3.0.0, 3.0.0]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Runtime.osx-x64",
+            "version": "[3.0.3, 3.0.3]"
           },
           {
             "name": "Microsoft.WindowsDesktop.App.Ref",
@@ -198,6 +226,11 @@
           }
         },
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.403\\RuntimeIdentifierGraph.json"
+      }
+    },
+    "runtimes": {
+      "osx-x64": {
+        "#import": []
       }
     }
   }

@@ -20,7 +20,7 @@
           "lib/netstandard2.0/System.Data.DataSetExtensions.dll": {}
         }
       },
-      "S2I_Extractor/1.0.0": {
+      "S2I_Calculator/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v3.0",
         "dependencies": {
@@ -28,10 +28,10 @@
           "System.Data.DataSetExtensions": "4.5.0"
         },
         "compile": {
-          "bin/placeholder/S2I_Extractor.dll": {}
+          "bin/placeholder/S2I_Calculator.dll": {}
         },
         "runtime": {
-          "bin/placeholder/S2I_Extractor.dll": {}
+          "bin/placeholder/S2I_Calculator.dll": {}
         }
       }
     }
@@ -125,15 +125,15 @@
         "version.txt"
       ]
     },
-    "S2I_Extractor/1.0.0": {
+    "S2I_Calculator/1.0.0": {
       "type": "project",
-      "path": "../S2I_Extractor/S2I_Extractor.csproj",
-      "msbuildProject": "../S2I_Extractor/S2I_Extractor.csproj"
+      "path": "../S2I_Extractor/S2I_Calculator.csproj",
+      "msbuildProject": "../S2I_Extractor/S2I_Calculator.csproj"
     }
   },
   "projectFileDependencyGroups": {
     ".NETCoreApp,Version=v3.1": [
-      "S2I_Extractor >= 1.0.0"
+      "S2I_Calculator >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -166,8 +166,8 @@
       "frameworks": {
         "netcoreapp3.1": {
           "projectReferences": {
-            "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj": {
-              "projectPath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj"
+            "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj": {
+              "projectPath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj"
             }
           }
         }

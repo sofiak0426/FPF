@@ -4,12 +4,12 @@
     "C:\\S2I_Filter\\S2I_Filter\\S2I_Filter.csproj": {}
   },
   "projects": {
-    "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj": {
+    "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj",
-        "projectName": "S2I_Extractor",
-        "projectPath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj",
+        "projectUniqueName": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj",
+        "projectName": "S2I_Calculator",
+        "projectPath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj",
         "packagesPath": "C:\\Users\\powuser\\.nuget\\packages\\",
         "outputPath": "C:\\S2I_Filter\\S2I_Extractor\\obj\\",
         "projectStyle": "PackageReference",
@@ -109,8 +109,8 @@
         "frameworks": {
           "netcoreapp3.1": {
             "projectReferences": {
-              "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj": {
-                "projectPath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Extractor.csproj"
+              "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj": {
+                "projectPath": "C:\\S2I_Filter\\S2I_Extractor\\S2I_Calculator.csproj"
               }
             }
           }

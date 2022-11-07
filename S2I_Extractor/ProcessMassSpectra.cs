@@ -7,7 +7,7 @@ using MSReader;
 using MSDataStructure;
 using MSProcessor;
 
-namespace S2I_Extractor
+namespace S2I_Calculator
 {
     public class ProcessMassSpectra
     {
