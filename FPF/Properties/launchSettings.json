@@ -2,7 +2,7 @@
   "profiles": {
     "iproxml_filter": {
       "commandName": "Project",
-      "commandLineArgs": "C:/FPF_data basel_params.txt"
+      "commandLineArgs": "basel_params.txt"
     }
   }
 }

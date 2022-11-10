@@ -5,6 +5,7 @@ namespace FPF
 {
     public class ds_Parameters
     {
+        private string _mainDir; //Main directory of all the files related to FPF (except for the parameter file)
         private string _iproDbFile; //File name for DB iprophet search result
         private string _iproDbSpstFile; //File name for DB + SL iprophet search result
         private string _modIproDbSpstFile; //Output name (the filtered DB + SL iprophet file)
@@ -17,6 +18,7 @@ namespace FPF
         //A dictionary that stores whether the global param values is correctly specified by user or not
         //Key: Parameter name in param file; Value: if the param is correctly specified by the user
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
+            {"main directory", false},
             {"database iprophet search file", false},
             {"database + spectrast iprophet search file", false},
             {"output iprophet file", false},
@@ -25,6 +27,12 @@ namespace FPF
             {"decoy prefixes or suffixes", false},
             {"proteins to be excluded from normalization", false}
         };
+
+        public string MainDir
+        {
+            get { return _mainDir; }
+            set { _mainDir = value; }
+        }
 
         public string IproDbFile
         {

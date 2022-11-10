@@ -237,3 +237,10 @@ C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.csproj.CoreCompileInpu
 C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.csproj.CopyComplete
 C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.dll
 C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.pdb
+C:\FPF\ResultReader\bin\Debug\ResultReader.dll
+C:\FPF\ResultReader\bin\Debug\ResultReader.pdb
+C:\FPF\ResultReader\obj\Debug\ResultReader.csproj.CoreCompileInputs.cache
+C:\FPF\ResultReader\obj\Debug\ResultReader.csproj.CopyComplete
+C:\FPF\ResultReader\obj\Debug\ResultReader.dll
+C:\FPF\ResultReader\obj\Debug\ResultReader.pdb
+C:\FPF\ResultReader\obj\Debug\ResultReader.csprojAssemblyReference.cache

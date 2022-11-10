@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\FPF\\iproxml_filter\\iproxml_filter\\FPF.csproj": {}
+    "C:\\FPF\\FPF\\FPF.csproj": {}
   },
   "projects": {
-    "C:\\FPF\\iproxml_filter\\iproxml_filter\\FPF.csproj": {
+    "C:\\FPF\\FPF\\FPF.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\FPF\\iproxml_filter\\iproxml_filter\\FPF.csproj",
+        "projectUniqueName": "C:\\FPF\\FPF\\FPF.csproj",
         "projectName": "FPF",
-        "projectPath": "C:\\FPF\\iproxml_filter\\iproxml_filter\\FPF.csproj",
+        "projectPath": "C:\\FPF\\FPF\\FPF.csproj",
         "packagesPath": "C:\\Users\\powuser\\.nuget\\packages\\",
-        "outputPath": "C:\\FPF\\iproxml_filter\\iproxml_filter\\obj\\",
+        "outputPath": "C:\\FPF\\FPF\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
@@ -30,8 +30,8 @@
         "frameworks": {
           "netcoreapp3.1": {
             "projectReferences": {
-              "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj": {
-                "projectPath": "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj"
+              "C:\\FPF\\ResultReader\\ResultReader.csproj": {
+                "projectPath": "C:\\FPF\\ResultReader\\ResultReader.csproj"
               }
             }
           }
@@ -63,11 +63,11 @@
         }
       }
     },
-    "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj": {
+    "C:\\FPF\\ResultReader\\ResultReader.csproj": {
       "restore": {
-        "projectUniqueName": "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj",
+        "projectUniqueName": "C:\\FPF\\ResultReader\\ResultReader.csproj",
         "projectName": "ResultReader",
-        "projectPath": "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj"
+        "projectPath": "C:\\FPF\\ResultReader\\ResultReader.csproj"
       },
       "frameworks": {
         "net40": {}

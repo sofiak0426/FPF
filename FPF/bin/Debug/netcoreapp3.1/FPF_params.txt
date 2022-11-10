@@ -1,0 +1,44 @@
+Main Directory: C:/TPP/data/FPF_example
+Database iProphet Search File: ids.ipro.pep.xml
+Database + SpectraST iProphet Search File: ics.ipro.pep.xml
+Output iProphet File: mod_ics.ipro.pep.xml
+Output Csv File for Filtered-out PSMs: filtered_out.csv
+Reference Channel: 1
+
+#Specify decoy prefixes. Imply prefixes (PREFIX-) or suffixes (-SUFFIX) and separate by comma, e.g. REV_-, -_DECOY
+#Imply "none" if there are no decoy proteins.
+Decoy Prefixes or Suffixes: REV_-, -DECOY
+
+#Specify keywords for standard proteins that should be excluded when calculating normalization ratios.
+#Imply prefixes (PREFIX-) or suffixes (-SUFFIX) and separate by comma, e.g. -ALBU_BOVIN, NP-
+#Imply "none" if all proteins are background and normalization is not needed.
+Proteins to be Excluded from Normalization: -BARHE
+
+#If a PSM falls within one of the ranges (including the lower boundary value) below, it should be removed.
+#Use '-' to specify filter ranges, ',' to separate different ranges.
+#For example, 2-5 or 1000-2000,3000-4000
+#Ranges with no lower or upper limit is also available by leaving it blank. For example, 35-.
+#If you choose not to specify filters of one feature, add # to the beginning of that line or imply "none".
+#For example, #Charge: or Charge: none
+#PTM Ratio is calculated by number of PTMs divided by peptide length
+
+Charge:5-
+Mass:4000-
+Peptide Length:25-
+Average Reporter Ion Intensity:-10000
+Intra-Peptide Euclidean Distance:0.8-
+Intra-Protein Euclidean Distance:0.6-
+Number of PTMs: none
+PTM Ratio: none
+Absolute Mass Difference: 2-
+Absolute Precursor m/z Difference: none
+Dot Product: -0.4
+DeltaD: none
+Number of Hits: none
+Mean of Dot Products of the Hits: none
+Standard Deviation of Dot Products of the Hits: none
+F-value:-0.4
+
+
+
+

@@ -14,3 +14,11 @@ D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\bin\Release\NPOI.
 D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\obj\Release\ResultReader.csprojResolveAssemblyReference.cache
 D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\obj\Release\ResultReader.dll
 D:\ProjectEdit\SpectralLibrary\SearchResultReader\ResultReader\obj\Release\ResultReader.pdb
+C:\FPF\ResultReader\bin\Release\ResultReader.dll
+C:\FPF\ResultReader\bin\Release\ResultReader.pdb
+C:\FPF\ResultReader\bin\Release\NPOI.xml
+C:\FPF\ResultReader\obj\Release\ResultReader.csprojAssemblyReference.cache
+C:\FPF\ResultReader\obj\Release\ResultReader.csproj.CoreCompileInputs.cache
+C:\FPF\ResultReader\obj\Release\ResultReader.csproj.CopyComplete
+C:\FPF\ResultReader\obj\Release\ResultReader.dll
+C:\FPF\ResultReader\obj\Release\ResultReader.pdb

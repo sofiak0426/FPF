@@ -40,7 +40,11 @@ namespace FPF
             this.meetingCritNumPsmCnt[featMeetingCritDic.Count - 1]++;
         }
 
-        public void FilteredOutPsmsToFile()
+        /// <summary>
+        /// Write the PSMs that are removed by FPF, and their features that meet the filtering criteria
+        /// </summary>
+        /// <param name="mainDir">The main directory where this file will be created</param>
+        public void FilteredOutPsmsToFile(string mainDir)
         {
             List<string> filteredOutFileLines = new List<string>();
             //Add header
@@ -53,7 +57,7 @@ namespace FPF
                 line.Trim(',');
                 filteredOutFileLines.Add(line);
             }
-            File.WriteAllLines(this._filteredOutFile, filteredOutFileLines);
+            File.WriteAllLines(Path.Combine(mainDir, this._filteredOutFile), filteredOutFileLines);
         }
 
         public void MeetingCritNumPsmCntToConosle()
