@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj": {}
+    "C:\\FPF\\iproxml_filter\\iproxml_filter\\FPF.csproj": {}
   },
   "projects": {
-    "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj": {
+    "C:\\FPF\\iproxml_filter\\iproxml_filter\\FPF.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj",
+        "projectUniqueName": "C:\\FPF\\iproxml_filter\\iproxml_filter\\FPF.csproj",
         "projectName": "FPF",
-        "projectPath": "C:\\iproxml_filter\\iproxml_filter\\FPF.csproj",
+        "projectPath": "C:\\FPF\\iproxml_filter\\iproxml_filter\\FPF.csproj",
         "packagesPath": "C:\\Users\\powuser\\.nuget\\packages\\",
-        "outputPath": "C:\\iproxml_filter\\iproxml_filter\\obj\\",
+        "outputPath": "C:\\FPF\\iproxml_filter\\iproxml_filter\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
@@ -30,8 +30,8 @@
         "frameworks": {
           "netcoreapp3.1": {
             "projectReferences": {
-              "C:\\iproxml_filter\\ResultReader\\ResultReader.csproj": {
-                "projectPath": "C:\\iproxml_filter\\ResultReader\\ResultReader.csproj"
+              "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj": {
+                "projectPath": "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj"
               }
             }
           }
@@ -63,11 +63,11 @@
         }
       }
     },
-    "C:\\iproxml_filter\\ResultReader\\ResultReader.csproj": {
+    "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj": {
       "restore": {
-        "projectUniqueName": "C:\\iproxml_filter\\ResultReader\\ResultReader.csproj",
+        "projectUniqueName": "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj",
         "projectName": "ResultReader",
-        "projectPath": "C:\\iproxml_filter\\ResultReader\\ResultReader.csproj"
+        "projectPath": "C:\\FPF\\iproxml_filter\\ResultReader\\ResultReader.csproj"
       },
       "frameworks": {
         "net40": {}

@@ -229,3 +229,11 @@ C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.csproj.CoreCompileInputs.c
 C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.csproj.CopyComplete
 C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.dll
 C:\iproxml_filter\ResultReader\obj\Debug\ResultReader.pdb
+C:\FPF\iproxml_filter\ResultReader\bin\Debug\ResultReader.dll
+C:\FPF\iproxml_filter\ResultReader\bin\Debug\ResultReader.pdb
+C:\FPF\iproxml_filter\ResultReader\bin\Debug\NPOI.xml
+C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.csprojAssemblyReference.cache
+C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.csproj.CoreCompileInputs.cache
+C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.csproj.CopyComplete
+C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.dll
+C:\FPF\iproxml_filter\ResultReader\obj\Debug\ResultReader.pdb

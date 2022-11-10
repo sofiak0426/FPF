@@ -15,7 +15,6 @@ namespace FPF
         //Counting of PSMs meeting each number of criteria. 
         //e.g. [10,5,6...] -> 10 PSMs meeting none of the filter criteria, 5 PSMs meeting only one of the filter criteria, 6 PSMs meeting two of the filter criteria, etc.
         private List<int> meetingCritNumPsmCnt = new List<int>();
-
         string _filteredOutFile = "";
 
         //Initialization
@@ -26,7 +25,8 @@ namespace FPF
 
         public string FilteredOutFile
         {
-             set { this._filteredOutFile = value; }
+            get { return this._filteredOutFile; } 
+            set { this._filteredOutFile = value; }
         }
 
         /// <summary>
@@ -37,8 +37,7 @@ namespace FPF
         public void AddFilteredOutPsm(string psmName, Dictionary<string, string> featMeetingCritDic)
         {
             this.psmMeetingCritDic.Add(psmName, featMeetingCritDic);
-            int meetingCritNum = featMeetingCritDic.Count;
-            this.meetingCritNumPsmCnt[meetingCritNum - 1]++;
+            this.meetingCritNumPsmCnt[featMeetingCritDic.Count - 1]++;
         }
 
         public void FilteredOutPsmsToFile()
@@ -59,7 +58,7 @@ namespace FPF
 
         public void MeetingCritNumPsmCntToConosle()
         {
-            Console.WriteLine(this.meetingCritNumPsmCnt.Sum());
+            //Console.WriteLine(this.meetingCritNumPsmCnt.Sum());
             //this.meetingCritNumPsmCnt[0] = filteredOutCnt - this.meetingCritNumPsmCnt.Sum();
             Console.WriteLine("Number of PSMs that meet different numbers of criteria:");
             Console.WriteLine(String.Format("1 criterion: {0}",this.meetingCritNumPsmCnt[0]));

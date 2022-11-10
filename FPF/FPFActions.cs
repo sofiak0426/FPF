@@ -28,7 +28,6 @@ namespace FPF
         int noSpstFeatCnt = 0; //Number of PSMs that are considered but with missing SpectraST feature values
         int consideredCnt = 0;// Number of PSMs that are considered by FPF
         int filteredOutCnt = 0;// Number of PSM that are filtered out by FPF
-        int zeroIntenCnt = 0;//test
 
         /// <summary>
         /// Defines thread actions by specified id. 0 for reading DB iprophet file and 1 for reading DB + SL iprophet file.
@@ -69,7 +68,9 @@ namespace FPF
             this.logFileLines = new List<string>() {"Warning: PSM with more than one hit:"};
 
             //Read parameters file
-            this.ReadParamFile(this.mainDir + paramFile);
+            if (!File.Exists(Path.Combine(this.mainDir, paramFile)))
+                throw new FileNotFoundException("Cannot find parameter file!");
+            this.ReadParamFile(Path.Combine(this.mainDir, paramFile));
 
             //Read the two iprophet files simultaneously with two threads
             List<int> workerIds = new List<int>{0,1};
@@ -83,15 +84,15 @@ namespace FPF
             this.FilterDbSpstIproFile();
 
             //Write result to filteredoutFile
-            this.filteredOutPsmsObj.FilteredOutPsmsToFile();
+            if (this.filteredOutPsmsObj.FilteredOutFile != "")
+                this.filteredOutPsmsObj.FilteredOutPsmsToFile();
 
             //Write to log file and console
             logFile = GetLogFileName();
-            File.WriteAllLines(this.mainDir + logFile, logFileLines);
+            File.WriteAllLines(Path.Combine(this.mainDir, logFile), logFileLines);
             Console.WriteLine("-------------------");
             Console.WriteLine(String.Format("FPF actions done! Examined: {0} PSMs, filtered out: {1} PSMs", consideredCnt, filteredOutCnt));
             this.filteredOutPsmsObj.MeetingCritNumPsmCntToConosle();
-            Console.WriteLine(zeroIntenCnt);
             return;       
         }
 
@@ -113,7 +114,7 @@ namespace FPF
                     continue;
 
                 String[] lineElementsArr = line.Split(':');
-                lineElementsArr[0] = lineElementsArr[0].Trim();
+                lineElementsArr[0] = lineElementsArr[0].Trim().ToLower(); //parameter name is not case-sensitive
                 lineElementsArr[1] = lineElementsArr[1].Trim();
 
                 //Check if the parameter or feature is already specified in another line and if the name is correct or not
@@ -138,50 +139,49 @@ namespace FPF
                     }
                     filtersObj.SetFeatureAsTrue(lineElementsArr[0]);
                 } 
+                else if (lineElementsArr[1] == "") //Check if the parameter value is specified as empty
+                    throw new ApplicationException(string.Format("You did not specify the value for {0}", lineElementsArr[0]));
                 else //parameter name error
                     throw new ApplicationException(errorCode);
 
                 //Set param or filter values
                 switch (lineElementsArr[0])
                 {
-                    case "Database Iprophet Search File":
+                    case "database iprophet search file":
                         this.parametersObj.IproDbFile = lineElementsArr[1];
                         break;
-                    case "Database + SpectraST Iprophet Search File":
+                    case "database + spectrast iprophet search file":
                         this.parametersObj.IproDbSpstFile = lineElementsArr[1];
                         break;
-                    case "Output Iprophet File":
+                    case "output iprophet file":
                         this.parametersObj.ModIproDbSpstFile = lineElementsArr[1];
                         break;
-                    case "Output Csv File for Filtered-out PSMs":
-                        this.filteredOutPsmsObj.FilteredOutFile = this.mainDir + lineElementsArr[1];
+                    case "output csv file for filtered-out psms":
+                        this.filteredOutPsmsObj.FilteredOutFile = Path.Combine(this.mainDir, lineElementsArr[1]);
                         break;
-                    case "Number of Channels":
-                        if (int.TryParse(lineElementsArr[1], out int channelCnt) == false)
-                            throw new ApplicationException (String.Format ("Error: incorrect format for \"number of channels\": {0}", lineElementsArr[1]));
-                        if (channelCnt <= 0)
-                            throw new ApplicationException (String.Format ("Error: incorrect input for \"number of channels\": {0}", lineElementsArr[1]));
-                        this.parametersObj.ChannelCnt = channelCnt;
-                        break;
-                    case "Reference Channel":
+                    case "reference channel":
                         if (int.TryParse(lineElementsArr[1], out int refChannel) == false)
                             throw new ApplicationException (String.Format ("Error: incorrect format for \"reference channel\": {0}", lineElementsArr[1]));
-                        if (refChannel <= 0)
-                            throw new ApplicationException (String.Format ("Error: incorrect input for \"reference channel\": {0}", lineElementsArr[1]));
+                        else if (refChannel <= 0)
+                            throw new ApplicationException (String.Format ("Error: reference channel number out of range!"));
                         this.parametersObj.RefChannel = refChannel;
                         break;
-                    case "Decoy Prefix":
-                        this.parametersObj.DecoyPrefixArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
-                        break;
-                    case "Background Keywords for Normalization":
+                    case "decoy prefixes or suffixes":
                         if (lineElementsArr[1].ToLower() != "none")
                         {
-                            string[] bgKeyArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
-                            this.normObj.AddBgProtKeyword(bgKeyArr); //Add background keywords to the object
+                            string[] decoyKeywordArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
+                            this.parametersObj.AddDecoyKeyword(decoyKeywordArr);
+                        }
+                        break;
+                    case "proteins to be excluded from normalization":
+                        if (lineElementsArr[1].ToLower() != "none")
+                        {
+                            string[] bgKeywordArr = lineElementsArr[1].Split(',').Select(decoyPrefix => decoyPrefix.Trim()).ToArray();
+                            this.normObj.AddStdProtKeyword(bgKeywordArr); //Add background keywords to the object
                         }
                         break;
                     default: //Add feature
-                        this.AddFilters(lineElementsArr[0], lineElementsArr[1]);
+                        this.filtersObj.AddFilters(lineElementsArr[0], lineElementsArr[1]);
                         break;
                 }
             }
@@ -194,51 +194,9 @@ namespace FPF
                     errorcode += String.Format("\"{0}\"\n", missingParam);
                 throw new ApplicationException(errorcode);
             }
-            //Check if reference channel is wrongly specified after all params are set
-            if (this.parametersObj.RefChannel > this.parametersObj.ChannelCnt)
-                throw new ApplicationException("Error: reference channel number out of range!");
+
 
             paramFileReader.Close();
-            return;
-        }
-
-        /// <summary>
-        /// Adds user-specified filters for each feature to filterObj for further use.
-        /// </summary>
-        /// <param name="feature"> Feature name</param>
-        /// <param name="filterStr"> The string containing filters for a single filter, read from the param file, e.g. 0.6-1 </param>
-        private void AddFilters(string feature, string filterStr)
-        {
-            //If the user did not specify filters of this feature
-            if (filterStr.ToLower() == "none")
-                return;
-
-            String[] filterArr = filterStr.Split(',').Select(filter => filter.Trim()).ToArray();
-            foreach (string filter in filterArr)
-            {
-                if (filter.IndexOf('-') == -1)
-                    throw new ApplicationException(String.Format("Feature \"{0}\": wrong filter format \"{1}\"", feature, filterStr));
-
-                String[] filtLimArr = filter.Split('-').Select(filtLim => filtLim.Trim()).ToArray(); //Containing strings for lower and upper limits of one filter
-                (double lowerLim, double upperLim) filtLim;
-                //Set up filter lower limit
-                if (filtLimArr[0] == String.Empty)
-                    filtLim.lowerLim = Double.NegativeInfinity;
-                else
-                {
-                    if (double.TryParse(filtLimArr[0], out filtLim.lowerLim) == false)
-                        throw new ApplicationException(String.Format("Feature {0}: wrong lower limit format", feature));
-                }
-                //Set up filter upper limit
-                if (filtLimArr[1] == String.Empty)
-                    filtLim.upperLim = Double.PositiveInfinity;
-                else
-                {
-                    if (double.TryParse(filtLimArr[1], out filtLim.upperLim) == false)
-                        throw new ApplicationException(String.Format("Feature {0}: wrong upper limit format", feature));
-                }
-                this.filtersObj.AddFilter(feature, filtLim);
-            }
             return;
         }
 
@@ -247,14 +205,14 @@ namespace FPF
         /// Check whether the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR) and whether the PSM contains zero reporter ion intensity.
         /// </summary>
         /// <param name="fdr001Prob">FDR 1% probability for the iprophet file</param>
-        /// <param name="decoyPrefixArr">Array that contains all the possible decoy prefixes</param>
+        /// <param name="decoyPrefixLi">List that contains all the possible decoy prefixes and suffixes</param>
         /// <returns>-1 for invalid PSMs, 0 for valid PSMs but with missing reporter ion intensity, and 1 for valid PSMs without missing reporter ion intensity.</returns>
-        public static int PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob, string[] decoyPrefixArr)
+        public static int PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob, List<(string, string)> decoyKeywordLi)
         {      
             //Check if the protein is decoy
-            foreach (string decoyPrefix in decoyPrefixArr)
+            foreach ((string, string) decoyKeyword in decoyKeywordLi)
             {
-                if (prot.ProtID.StartsWith(decoyPrefix))
+                if (decoyKeyword.Item1 == "PRE" && prot.ProtID.StartsWith(decoyKeyword.Item2) || decoyKeyword.Item1 == "SUF" && prot.ProtID.EndsWith(decoyKeyword.Item2))
                     return -1;
             }
 
@@ -291,7 +249,9 @@ namespace FPF
         {
             Console.WriteLine("Parsing database search iprophet file...");
             PepXmlProtXmlReader iproDbReader = new PepXmlProtXmlReader();
-            this.dataContainerObj.iproDbResult = iproDbReader.ReadFiles(this.mainDir + this.parametersObj.IproDbFile, "",
+            if (!File.Exists(Path.Combine(this.mainDir, this.parametersObj.IproDbFile)))
+                throw new FileNotFoundException("Cannot find database search iProphet file!");
+            this.dataContainerObj.iproDbResult = iproDbReader.ReadFiles(Path.Combine(this.mainDir, this.parametersObj.IproDbFile), "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
             //get FDR 1% probability
@@ -305,12 +265,18 @@ namespace FPF
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
                         //If PSM is valid, add PSM name to the list
-                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbFdr001Prob, this.parametersObj.DecoyPrefixArr) != -1 
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbFdr001Prob, this.parametersObj.DecoyKeywordLi) != -1 
                             && !this.dataContainerObj.dbPsmIdLi.Contains(psm.QueryNumber))
                             this.dataContainerObj.dbPsmIdLi.Add(psm.QueryNumber);
                     }
                 }
             }
+
+            //Get the number of channels
+            this.parametersObj.ChannelCnt = this.dataContainerObj.iproDbResult.Protein_Dic.First<KeyValuePair<string, ds_Protein>>().Value.Peptide_Dic.First<KeyValuePair<string, ds_Peptide>>().Value.PsmList[0].libra_ChanIntenDi.Count<KeyValuePair<int, double>>();
+            //Check whether reference channel is within the valid range
+            if (this.parametersObj.RefChannel > this.parametersObj.ChannelCnt)
+                throw new ApplicationException(String.Format("Error: reference channel number out of range!"));
 
             //Calculate ratio for normalization
             this.normObj.GetChannelMed(this.parametersObj, this.dataContainerObj.iproDbResult);
@@ -327,7 +293,9 @@ namespace FPF
         {
             Console.WriteLine("Parsing database + spectraST search iprophet file...");
             PepXmlProtXmlReader iproDbSpstReader = new PepXmlProtXmlReader();
-            this.dataContainerObj.iproDbSpstResult = iproDbSpstReader.ReadFiles(this.mainDir + this.parametersObj.IproDbSpstFile, "",
+            if (!File.Exists(Path.Combine(this.mainDir, this.parametersObj.IproDbSpstFile)))
+                throw new FileNotFoundException("Cannot find database + spectraST search iProphet file!");
+            this.dataContainerObj.iproDbSpstResult = iproDbSpstReader.ReadFiles(Path.Combine(this.mainDir,this.parametersObj.IproDbSpstFile), "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
             //get fdr < 1% probability
@@ -347,7 +315,7 @@ namespace FPF
                 {
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
-                        int int_isValid = PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob, this.parametersObj.DecoyPrefixArr);
+                        int int_isValid = PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob, this.parametersObj.DecoyKeywordLi);
                         if (int_isValid == -1) //Invalid PSM
                             continue;
 
@@ -515,7 +483,7 @@ namespace FPF
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
                         //Check PSM validity, only calculate euclidean between valid PSMs without missing intensity
-                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob, this.parametersObj.DecoyPrefixArr)!= 1)
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.parametersObj.DbSpstFdr001Prob, this.parametersObj.DecoyKeywordLi)!= 1)
                             continue;
 
                         //get intensity and ratio
@@ -599,12 +567,12 @@ namespace FPF
             this.logFileLines.Add("Warning: PSMs taken into account by feature filter but with missing Spectrast feature values");
             //Xml reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
-            XmlReader iproDbSpstReader = XmlReader.Create(String.Format("{0}{1}",this.mainDir, this.parametersObj.IproDbSpstFile), readerSettings);
+            XmlReader iproDbSpstReader = XmlReader.Create(Path.Combine(this.mainDir, this.parametersObj.IproDbSpstFile), readerSettings);
             XmlReader msmsRunReader = iproDbSpstReader;
             iproDbSpstReader.Read(); //Jump to first node
             //Xml writer setup
             XmlWriterSettings writerSettings = new XmlWriterSettings {Indent = true, IndentChars = " "};
-            XmlWriter modIproDbSpstWriter = XmlWriter.Create(String.Format("{0}{1}",this.mainDir, this.parametersObj.ModIproDbSpstFile), writerSettings);
+            XmlWriter modIproDbSpstWriter = XmlWriter.Create(Path.Combine(this.mainDir, this.parametersObj.ModIproDbSpstFile), writerSettings);
             while (true)
             {
                 if (iproDbSpstReader.Name == "xml") //read xml header
@@ -633,15 +601,15 @@ namespace FPF
                     modIproDbSpstWriter.WriteStartElement(iproDbSpstReader.Name);
                     modIproDbSpstWriter.WriteAttributes(iproDbSpstReader,false);
                     msmsRunReader = iproDbSpstReader.ReadSubtree();
-                    ReadMsmsRun(msmsRunReader, modIproDbSpstWriter);
+                    this.ReadMsmsRun(msmsRunReader, modIproDbSpstWriter);
                     modIproDbSpstWriter.WriteEndElement();
                     iproDbSpstReader.Skip();
                     continue;
                 }
                 else
-                    Console.WriteLine(String.Format("Warning: unexpected node in {0}: {1}", this.mainDir + this.parametersObj.IproDbSpstFile, iproDbSpstReader.Name));
+                    Console.WriteLine(String.Format("Warning: unexpected node in {0}: {1}", Path.Combine(this.mainDir + this.parametersObj.IproDbSpstFile), iproDbSpstReader.Name));
                 iproDbSpstReader.Read();
-                if (iproDbSpstReader.EOF == true)
+                if (iproDbSpstReader.EOF)
                     break;
             }
             //Write number of PSMs that are considered by FPF but without SpectraST features into log file
@@ -707,52 +675,52 @@ namespace FPF
             {
                 switch (filtsForOneFeat.Key)
                 {
-                    case "Charge":
+                    case "charge":
                         featValue = (double) psmInfoObj.Charge;
                         break;
-                    case "Mass":
+                    case "mass":
                         featValue = psmInfoObj.Mass;
                         break;
-                    case "Peptide Length":
+                    case "peptide length":
                         featValue = (double) psmInfoObj.Peplen;
                         break;
-                    case "Average Reporter Ion Intensity":
+                    case "average reporter ion intensity":
                         featValue = psmInfoObj.AvgInten;
                         break;
-                    case "Intra-Peptide Euclidean Distance":
+                    case "intra-peptide euclidean distance":
                         featValue = psmInfoObj.IntraPepEuDist;
                         break;
-                    case "Intra-Protein Euclidean Distance":
+                    case "intra-protein euclidean distance":
                         featValue = psmInfoObj.IntraProtEuDist;
                         break;
-                    case "Number of PTMs":
+                    case "number of ptms":
                         featValue = psmInfoObj.PtmCount;
                         break;
-                    case "PTM Ratio":
+                    case "ptm ratio":
                         featValue = psmInfoObj.PtmRatio;
                         break;
-                    case "Absolute Mass Difference":
+                    case "absolute mass difference":
                         featValue = psmInfoObj.AbsMassDiff;
                         break;
-                    case "Absolute Precursor Mz Difference":
+                    case "absolute precursor m/z difference":
                         featValue = psmInfoObj.AbsPrecursorMzDiff;
                         break;
-                    case "Dot Product":
+                    case "dot product":
                         featValue = psmInfoObj.DotProduct;
                         break;
-                    case "DeltaD":
+                    case "deltad":
                         featValue = psmInfoObj.DeltaScore;
                         break;
-                    case "Number of Hits":
+                    case "number of hits":
                         featValue = psmInfoObj.HitsNum;
                         break;
-                    case "Mean of Dot Products of the Hits":
+                    case "mean of dot products of the hits":
                         featValue = psmInfoObj.HitsMean;
                         break;
-                    case "Standard Deviation of Dot Products of the Hits":
+                    case "standard deviation of dot products of the hits":
                         featValue = psmInfoObj.HitsStdev;
                         break;
-                    case "F-value":
+                    case "f-value":
                         featValue = psmInfoObj.Fval;
                         break;
                     default:
@@ -787,9 +755,6 @@ namespace FPF
                 this.logFileLines.Add(psmName + "\n");
                 this.noSpstFeatCnt++;
             }
-
-            if (psmInfoObj.IntraPepEuDist == -1000 && featMeetCritCnt >= this.filtersObj.featMeetingCritNumCutoff)
-                this.zeroIntenCnt++;
 
             if(featMeetCritCnt > 0)
                 this.filteredOutPsmsObj.AddFilteredOutPsm(psmName, featMeetingCriteriaDic);
