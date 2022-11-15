@@ -1,41 +1,46 @@
 {
   "runtimeTarget": {
-    "name": ".NETCoreApp,Version=v3.1",
+    "name": ".NETCoreApp,Version=v3.0",
     "signature": ""
   },
   "compilationOptions": {},
   "targets": {
-    ".NETCoreApp,Version=v3.1": {
-      "S2I_Filter/1.0.0": {
-        "dependencies": {
-          "S2I_Calculator": "1.0.0"
-        },
-        "runtime": {
-          "S2I_Filter.dll": {}
-        }
-      },
-      "Microsoft.CSharp/4.7.0": {},
-      "System.Data.DataSetExtensions/4.5.0": {},
+    ".NETCoreApp,Version=v3.0": {
       "S2I_Calculator/1.0.0": {
         "dependencies": {
           "Microsoft.CSharp": "4.7.0",
-          "System.Data.DataSetExtensions": "4.5.0"
+          "System.Data.DataSetExtensions": "4.5.0",
+          "ICSharpCode.SharpZipLib": "0.86.0.518",
+          "Ionic.Zlib": "1.9.1.5",
+          "MSDataStructure": "1.0.0.0",
+          "MSProcessor": "1.0.0.0",
+          "MSReader": "1.0.0.0"
         },
         "runtime": {
           "S2I_Calculator.dll": {}
         }
       },
-      "MSDataStructure/1.0.0.0": {
+      "Microsoft.CSharp/4.7.0": {},
+      "System.Data.DataSetExtensions/4.5.0": {},
+      "ICSharpCode.SharpZipLib/0.86.0.518": {
         "runtime": {
-          "MSDataStructure.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
+          "ICSharpCode.SharpZipLib.dll": {
+            "assemblyVersion": "0.86.0.518",
+            "fileVersion": "0.86.0.518"
           }
         }
       },
-      "MSReader/1.0.0.0": {
+      "Ionic.Zlib/1.9.1.5": {
         "runtime": {
-          "MSReader.dll": {
+          "Ionic.Zlib.dll": {
+            "assemblyVersion": "1.9.1.5",
+            "fileVersion": "1.9.1.5"
+          }
+        }
+      },
+      "MSDataStructure/1.0.0.0": {
+        "runtime": {
+          "MSDataStructure.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -49,18 +54,18 @@
           }
         }
       },
-      "Ionic.Zlib/1.9.1.5": {
+      "MSReader/1.0.0.0": {
         "runtime": {
-          "Ionic.Zlib.dll": {
-            "assemblyVersion": "1.9.1.5",
-            "fileVersion": "1.9.1.5"
+          "MSReader.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
           }
         }
       }
     }
   },
   "libraries": {
-    "S2I_Filter/1.0.0": {
+    "S2I_Calculator/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -79,17 +84,17 @@
       "path": "system.data.datasetextensions/4.5.0",
       "hashPath": "system.data.datasetextensions.4.5.0.nupkg.sha512"
     },
-    "S2I_Calculator/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "MSDataStructure/1.0.0.0": {
+    "ICSharpCode.SharpZipLib/0.86.0.518": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "MSReader/1.0.0.0": {
+    "Ionic.Zlib/1.9.1.5": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "MSDataStructure/1.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
@@ -99,7 +104,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Ionic.Zlib/1.9.1.5": {
+    "MSReader/1.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

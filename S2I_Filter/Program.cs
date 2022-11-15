@@ -5,7 +5,7 @@
         public static void Main(string[] args)
         {
             S2I_FilterActions startAction = new S2I_FilterActions();
-            startAction.MainActions(args); //args[0]: dataDir; args[1]: param file
+            startAction.MainActions(args[0]); //args[0]: the param file name
         }
     }
 }

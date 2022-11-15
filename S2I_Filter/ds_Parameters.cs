@@ -8,150 +8,25 @@ namespace S2I_Filter
 {
     public class ds_Parameters
     {
-        public string dataDir { get; set; } 
-        public string dbIproFile { get; set; }
-        public string dataType { get; set; }
-        public double cenWinSize { get; set; }
-        public double isoWinSize { get; set; }
-        public double precursorTol { get; set; }
-        public double precurIsoTol { get; set; }
+        public List<string> _rawDataLi = new List<string>();
+
+        public string MainDir { get; set; } 
+        public string DbIproFile { get; set; }
+        public string DataType { get; set; }
+        public double CenWinSize { get; set; }
+        public double IsoWinSize { get; set; }
+        public double PrecursorTol { get; set; }
+        public double PrecurIsoTol { get; set; }
         public double S2IThresh { get; set; }
-        public List<string> rawDataLi { get; set; }
-
-        /// <summary>
-        /// Read parameters from the parameter file and construct a parameter object.
-        /// </summary>
-        /// <param name="dataDir">The data directory which contains the parameter file and all the mzML files</param>
-        /// <param name="paramFile">The parameter file name </param>
-        public ds_Parameters(string dataDir, string paramFile)
-        {
-            this.dataDir = dataDir;
-            this.rawDataLi = new List<string>();
-
-            StreamReader paramReader = new StreamReader(Path.Combine(this.dataDir, paramFile));
-            string line;
-            while ((line = paramReader.ReadLine()) != null)
-            {
-                //Skip annotations or empty lines
-                if (line == "")
-                    continue;
-                if (line == "\n")
-                    continue;
-                else if (line[0] == '#')
-                    continue;
-
-                String[] lineElementsArr = line.Split(':');
-                lineElementsArr[0] = lineElementsArr[0].Trim();
-                lineElementsArr[1] = lineElementsArr[1].Trim();
-
-
-                //Check if the parameter name is valid
-                string errorCode = String.Format("Error:" + "have you modified the parameter to \"{0}\"?", lineElementsArr[0]);
-                lineElementsArr[0] = lineElementsArr[0].ToLower();
-                if (this.ValidateParamName(lineElementsArr[0])) //If the line specifies a parameter
-                {
-                    if (this.GetParamIsSet(lineElementsArr[0]) == true) //Check whether the param is specified by the user already
-                    {
-                        errorCode = String.Format("Error: you have repeatedly specify the parameter \"{0}\"", lineElementsArr[0]);
-                        throw new ApplicationException(errorCode);
-                    }
-                    this.SetParamAsTrue(lineElementsArr[0]);
-                }
-                else
-                    throw new ApplicationException(errorCode);
-
-                //Set parameter values
-                switch (lineElementsArr[0])
-                {
-                    case "iprophet search file":
-                        {
-                            this.dbIproFile = lineElementsArr[1];
-                            if (!File.Exists(Path.Combine(this.dataDir, this.dbIproFile)))
-                                throw new FileLoadException("The iProphet file does not exist!");
-                            break;
-                        }
-                    case "datatype":
-                        {
-                            this.dataType = lineElementsArr[1];
-                            if (!this.dataType.Equals("centroid", StringComparison.OrdinalIgnoreCase) && !this.dataType.Equals("profile", StringComparison.OrdinalIgnoreCase))
-                                throw new ApplicationException("Please specify dataType as either Centroid or Profile...");
-                            break;
-                        }
-                    case "centroid window size":
-                        {
-                            if (this.dataType.Equals("centroid", StringComparison.OrdinalIgnoreCase))
-                                break;
-                            double winSize;
-                            bool canParse = double.TryParse(lineElementsArr[1], out winSize);
-                            this.cenWinSize = canParse ? winSize : 0;
-                            if (this.cenWinSize <= 0)
-                                throw new ApplicationException("Please specify centroid window size as a float number larger than 0");
-                            break;
-                        }
-                    case "isolation window size":
-                        {
-                            double winSize;
-                            bool canParse = double.TryParse(lineElementsArr[1], out winSize);
-                            this.isoWinSize = canParse ? winSize : 0;
-                            if (this.isoWinSize <= 0)
-                                throw new ApplicationException("Please specify isolation window size as a float number larger than 0");
-                            break;
-                        }
-                    case "precursor m/z tolerance":
-                        {
-                            double tol;
-                            bool canParse = double.TryParse(lineElementsArr[1], out tol);
-                            this.precursorTol = canParse ? tol : 0;
-                            if (this.precursorTol <= 0)
-                                throw new ApplicationException("Please specify precursor m/z tolerance as a float number larger than 0");
-                            break;
-                        }
-                    case "precursor isotopic peak m/z tolerance":
-                        {
-                            double tol;
-                            bool canParse = double.TryParse(lineElementsArr[1], out tol);
-                            this.precurIsoTol = canParse ? tol : 0;
-                            if (this.precurIsoTol <= 0)
-                                throw new ApplicationException("Please specify precursor isotopic peak m/z tolearance as a float number larger than 0");
-                            break;
-                        }
-                    case "s2i threshold":
-                        {
-                            double s2i;
-                            bool canParse = double.TryParse(lineElementsArr[1], out s2i);
-                            this.S2IThresh = canParse ? s2i : 0;
-                            if (this.S2IThresh < 0 || this.S2IThresh > 1)
-                                throw new ApplicationException("Please specify S2I threshold as a float number between 0 and 1");
-                            break;
-                        }
-                    default:
-                        break;
-                }
-            }
-
-            //Check if all parameters are set
-            List<string> missingParams = this.CheckAllParamsSet();
-            if (missingParams.Count > 0) //Some of the parameters are missing
-            {
-                string errorcode = "Error: you didn't specify the values of the following parameters:\n";
-                foreach (string missingParam in missingParams)
-                    errorcode += String.Format("\"{0}\"\n", missingParam);
-                throw new ApplicationException(errorcode);
-            }
-
-            //Store all mzML file names
-            List<string> ext = new List<string> { "*.mzML", "*.mzXML" };
-            foreach (String fileExtension in ext)
-            {
-                foreach (String file in Directory.EnumerateFiles(this.dataDir, fileExtension, SearchOption.TopDirectoryOnly))
-                    this.rawDataLi.Add(file);
-            }
-            return;
+        public List<string> RawDataLi {
+            get { return _rawDataLi; }
+            set { _rawDataLi = value;} 
         }
 
         //A dictionary that stores whether the global param values is correctly specified by user or not
         //Key: Parameter name in param file; Value: if the param is correctly specified by the user
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
+            {"main directory", false},
             {"iprophet search file", false},
             {"datatype", false},
             {"centroid window size", false},

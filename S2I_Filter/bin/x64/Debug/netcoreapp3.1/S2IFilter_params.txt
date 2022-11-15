@@ -1,0 +1,17 @@
+Main Directory: C:/TPP/data/FPF_example
+
+# The iProphet search file whose PSMs will be filtered by S2I.
+iProphet Search File: ids.ipro.pep.xml
+
+# Specify whether the mzML/mzXML files are in "profile" or "centroid" mode. 
+# If the files are in profile mode, it is necessary to specify the centroid window size as well.
+DataType: centroid
+Centroid Window Size:
+
+# Parameters for calculating S2I of PSMs. All values should be float numbers larger than 0.
+Isolation Window Size: 1.0
+Precursor m/z Tolerance: 0.02
+Precursor Isotopic Peak m/z Tolerance: 0.02
+
+# PSMs with S2I below the threshold will be removed from the iProphet file.
+S2I Threshold: 0.7
