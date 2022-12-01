@@ -3,6 +3,7 @@ using System.IO;
 using System.Diagnostics;
 using S2I_Calculator;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace S2I_Filter
@@ -16,7 +17,7 @@ namespace S2I_Filter
         /// Main actions performed by S2I_Filter.
         /// 1. Reads the parameter file;
         /// 2. Calculates S2I from all mzML files available in the data directory with S2I_Calculator;
-        /// 3. Parses through the input iProphet file and remove PSMs with S2I lower than threshold.
+        /// 3. Parses through the iProphet file from IDS and remove PSMs with S2I lower than threshold.
         /// </summary>
         /// <param name="paramFile">arg[1] = param file name</param>
         public void MainActions(string paramFile)
@@ -34,20 +35,19 @@ namespace S2I_Filter
             this.FilterIproByS2I();
  
             programWatch.Stop();
-            Console.WriteLine("Finished\nElapsed time : {0} ms", programWatch.ElapsedMilliseconds.ToString());
             return;
         }
 
         /// <summary>
         /// Parses the parameters or provide help to the user.
         /// </summary>
-        /// <param name="paramFile">Can be arg[0] = dataDir, arg[1] = param file name</param>
+        /// <param name="paramFile">param file name</param>
         /// <returns>True if the parameter file is successfully parsed; otherwise false</returns>
         public void ReadParamFile(string paramFile)
         {
             if (!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), paramFile)))
-                throw new ApplicationException("Parameter file not found...");
-            Console.WriteLine("Parameter file detected successfully\nReading and Processing...");
+                throw new ApplicationException("Cannot find parameter file!");
+            Console.WriteLine("Reading parameter file...");
             StreamReader paramReader = new StreamReader(Path.Combine(Directory.GetCurrentDirectory(), paramFile));
             string line;
             while ((line = paramReader.ReadLine()) != null)
@@ -62,6 +62,7 @@ namespace S2I_Filter
 
                 String[] lineElementsArr = line.Split(new[] { ':' }, 2);
                 lineElementsArr[0] = lineElementsArr[0].Trim().ToLower();
+                lineElementsArr[0] = Regex.Replace(lineElementsArr[0], @"\s+", " ");
                 lineElementsArr[1] = lineElementsArr[1].Trim();
 
 
@@ -87,9 +88,9 @@ namespace S2I_Filter
                             this.paramsObj.MainDir = lineElementsArr[1];
                             break;
                         }
-                    case "iprophet search file":
+                    case "iprophet file from identification based on database searching (ids)":
                         {
-                            this.paramsObj.DbIproFile = lineElementsArr[1];
+                            this.paramsObj.idsIproFile = lineElementsArr[1];
                             break;
                         }
                     case "datatype":
@@ -97,7 +98,7 @@ namespace S2I_Filter
                             this.paramsObj.DataType = lineElementsArr[1];
                             if (!this.paramsObj.DataType.Equals("centroid", StringComparison.OrdinalIgnoreCase) &&
                                 !this.paramsObj.DataType.Equals("profile", StringComparison.OrdinalIgnoreCase))
-                                throw new ApplicationException("Please specify dataType as either Centroid or Profile...");
+                                throw new ApplicationException("Please specify dataType as either Centroid or Profile!");
                             break;
                         }
                     case "centroid window size":
@@ -135,7 +136,7 @@ namespace S2I_Filter
                             bool canParse = double.TryParse(lineElementsArr[1], out tol);
                             this.paramsObj.PrecurIsoTol = canParse ? tol : 0;
                             if (this.paramsObj.PrecurIsoTol <= 0)
-                                throw new ApplicationException("Please specify precursor isotopic peak m/z tolearance as a float number larger than 0");
+                                throw new ApplicationException("Please specify precursor isotopic peak m/z tolerance as a float number larger than 0");
                             break;
                         }
                     case "s2i threshold":
@@ -188,77 +189,77 @@ namespace S2I_Filter
         }
 
         /// <summary>
-        /// Reads the input iProphet file, removes those with S2I lower than threshold, and writes a new iProphet file.
+        /// Reads the input iProphet file from IDS, removes those with S2I lower than threshold, and writes a new iProphet file.
         /// </summary>
         public void FilterIproByS2I()
         {
-            if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.DbIproFile)))
-                throw new FileLoadException("The iProphet file does not exist!");
+            if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.idsIproFile)))
+                throw new FileLoadException("Cannot find iProphet file from IDS!");
 
 
             Console.WriteLine("Filtering iProphet file and writing to new iProphet...");
             //Xml reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
-            XmlReader iproDbReader = XmlReader.Create(Path.Combine(this.paramsObj.MainDir,
-                this.paramsObj.DbIproFile), readerSettings);
-            XmlReader msmsRunReader = iproDbReader;
-            iproDbReader.Read(); //Jump to first node
+            XmlReader idsIproReader = XmlReader.Create(Path.Combine(this.paramsObj.MainDir,
+                this.paramsObj.idsIproFile), readerSettings);
+            XmlReader msmsRunReader = idsIproReader;
+            idsIproReader.Read(); //Jump to first node
             //Xml writer setup
             XmlWriterSettings writerSettings = new XmlWriterSettings { Indent = true, IndentChars = " " };
-            XmlWriter modIproDbWriter = XmlWriter.Create(Path.Combine(this.paramsObj.MainDir, "adjS2I_" +
-                this.paramsObj.DbIproFile), writerSettings);
+            XmlWriter modIdsIproWriter = XmlWriter.Create(Path.Combine(this.paramsObj.MainDir, "adjS2I_" +
+                this.paramsObj.idsIproFile), writerSettings);
             while (true)
             {
-                if (iproDbReader.Name == "xml") //read xml header
+                if (idsIproReader.Name == "xml") //read xml header
                 {
-                    modIproDbWriter.WriteNode(iproDbReader, false);
+                    modIdsIproWriter.WriteNode(idsIproReader, false);
                     continue;
                 }
-                else if (iproDbReader.Name == "msms_pipeline_analysis" && iproDbReader.NodeType == XmlNodeType.Element) //Start element of msms_pipeline_analysis
+                else if (idsIproReader.Name == "msms_pipeline_analysis" && idsIproReader.NodeType == XmlNodeType.Element) //Start element of msms_pipeline_analysis
                 {
-                    modIproDbWriter.WriteStartElement(iproDbReader.Name, iproDbReader.GetAttribute("xmlns"));
-                    modIproDbWriter.WriteAttributeString("date", iproDbReader.GetAttribute("date"));
-                    modIproDbWriter.WriteAttributeString("xsi", "schemaLocation", iproDbReader.GetAttribute("xmlns:xsi"),
-                        iproDbReader.GetAttribute("xsi:schemaLocation"));
-                    modIproDbWriter.WriteAttributeString("summary_xml", iproDbReader.GetAttribute("summary_xml"));
+                    modIdsIproWriter.WriteStartElement(idsIproReader.Name, idsIproReader.GetAttribute("xmlns"));
+                    modIdsIproWriter.WriteAttributeString("date", idsIproReader.GetAttribute("date"));
+                    modIdsIproWriter.WriteAttributeString("xsi", "schemaLocation", idsIproReader.GetAttribute("xmlns:xsi"),
+                        idsIproReader.GetAttribute("xsi:schemaLocation"));
+                    modIdsIproWriter.WriteAttributeString("summary_xml", idsIproReader.GetAttribute("summary_xml"));
                 }
-                else if (iproDbReader.Name == "msms_pipeline_analysis" && iproDbReader.NodeType == XmlNodeType.EndElement) //End element of msms_pipeline_analysis
+                else if (idsIproReader.Name == "msms_pipeline_analysis" && idsIproReader.NodeType == XmlNodeType.EndElement) //End element of msms_pipeline_analysis
                 {
-                    modIproDbWriter.WriteEndElement();
+                    modIdsIproWriter.WriteEndElement();
                 }
-                else if (iproDbReader.Name == "analysis_summary") //Other analysis summaries
+                else if (idsIproReader.Name == "analysis_summary") //Other analysis summaries
                 {
-                    modIproDbWriter.WriteNode(iproDbReader, false);
+                    modIdsIproWriter.WriteNode(idsIproReader, false);
                     continue;
                 }
-                else if (iproDbReader.Name == "msms_run_summary") //Contain PSM information
+                else if (idsIproReader.Name == "msms_run_summary") //Contain PSM information
                 {
-                    modIproDbWriter.WriteStartElement(iproDbReader.Name);
-                    modIproDbWriter.WriteAttributes(iproDbReader, false);
-                    msmsRunReader = iproDbReader.ReadSubtree();
-                    ReadMsmsRun(msmsRunReader, modIproDbWriter);
-                    modIproDbWriter.WriteEndElement();
-                    iproDbReader.Skip();
+                    modIdsIproWriter.WriteStartElement(idsIproReader.Name);
+                    modIdsIproWriter.WriteAttributes(idsIproReader, false);
+                    msmsRunReader = idsIproReader.ReadSubtree();
+                    ReadMsmsRun(msmsRunReader, modIdsIproWriter);
+                    modIdsIproWriter.WriteEndElement();
+                    idsIproReader.Skip();
                     continue;
                 }
                 else
-                    Console.WriteLine(String.Format("Warning: unexpected node {0}", iproDbReader.Name));
-                iproDbReader.Read();
-                if (iproDbReader.EOF == true)
+                    Console.WriteLine(String.Format("Warning: unexpected node {0}", idsIproReader.Name));
+                idsIproReader.Read();
+                if (idsIproReader.EOF == true)
                     break;
             }
 
-            iproDbReader.Close();
+            idsIproReader.Close();
             msmsRunReader.Close();
-            modIproDbWriter.Close();
+            modIdsIproWriter.Close();
         }
 
         /// <summary>
         /// Read the msms_run_summary section of the iProphet file
         /// </summary>
         /// <param name="msmsRunReader"> xml reader for the section</param>
-        /// <param name="modIproDbWriter"> output writer</param>
-        private void ReadMsmsRun(XmlReader msmsRunReader, XmlWriter modIproDbWriter)
+        /// <param name="modIdsIproWriter"> output writer</param>
+        private void ReadMsmsRun(XmlReader msmsRunReader, XmlWriter modIdsIproWriter)
         {
             //Reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
@@ -276,7 +277,7 @@ namespace S2I_Filter
                     {
                         S2I = this.ms2InfoDic[scanID].s2i;
                         if (S2I >= this.paramsObj.S2IThresh)
-                            modIproDbWriter.WriteNode(msmsRunReader, false);
+                            modIdsIproWriter.WriteNode(msmsRunReader, false);
                         else
                             msmsRunReader.Skip();
                     }
@@ -288,7 +289,7 @@ namespace S2I_Filter
                 else if (msmsRunReader.EOF == true)
                     break;
                 else //Other elements in msms_run_summary
-                    modIproDbWriter.WriteNode(msmsRunReader, false);
+                    modIdsIproWriter.WriteNode(msmsRunReader, false);
             }
         }
 

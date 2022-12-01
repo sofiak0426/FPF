@@ -11,7 +11,7 @@ namespace S2I_Filter
         public List<string> _rawDataLi = new List<string>();
 
         public string MainDir { get; set; } 
-        public string DbIproFile { get; set; }
+        public string idsIproFile { get; set; }
         public string DataType { get; set; }
         public double CenWinSize { get; set; }
         public double IsoWinSize { get; set; }
@@ -27,7 +27,7 @@ namespace S2I_Filter
         //Key: Parameter name in param file; Value: if the param is correctly specified by the user
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
             {"main directory", false},
-            {"iprophet search file", false},
+            {"iprophet file from identification based on database searching (ids)", false},
             {"datatype", false},
             {"centroid window size", false},
             {"isolation window size", false},
