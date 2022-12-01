@@ -41,7 +41,7 @@ namespace FPF
         }
 
         /// <summary>
-        /// Write the PSMs that are removed by FPF, and their features that meet the filtering criteria
+        /// Writes the PSMs that are removed by FPF and their features that meet the filtering criteria
         /// </summary>
         /// <param name="mainDir">The main directory where this file will be created</param>
         public void FilteredOutPsmsToFile(string mainDir)
@@ -62,8 +62,6 @@ namespace FPF
 
         public void MeetingCritNumPsmCntToConosle()
         {
-            //Console.WriteLine(this.meetingCritNumPsmCnt.Sum());
-            //this.meetingCritNumPsmCnt[0] = filteredOutCnt - this.meetingCritNumPsmCnt.Sum();
             Console.WriteLine("Number of PSMs that meet different numbers of criteria:");
             Console.WriteLine(String.Format("1 criterion: {0}",this.meetingCritNumPsmCnt[0]));
             for (int i = 1; i < this.meetingCritNumPsmCnt.Count; i++)

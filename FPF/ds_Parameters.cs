@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System;
 
 namespace FPF
@@ -6,26 +7,26 @@ namespace FPF
     public class ds_Parameters
     {
         private string _mainDir; //Main directory of all the files related to FPF (except for the parameter file)
-        private string _iproDbFile; //File name for DB iprophet search result
-        private string _iproDbSpstFile; //File name for DB + SL iprophet search result
-        private string _modIproDbSpstFile; //Output name (the filtered DB + SL iprophet file)
+        private string _idsIproFile; //Name of the iProphet file from IDS
+        private string _icsIproFile; //Name of the iProphet file from ICS
+        private string _modIcsIproFile; //Name of the modified iProphet file from ICS
         private int _channelCnt;//Total number of channels
         private int _refChannel;//Number of reference channel (starting from 1)
         private List<(string, string)> _decoyKeywordLi = new List<(string, string)>(); //Array storing prefixes of decoy proteins
-        private float _dbFdr001Prob; // FDR 1% probability of DB iprophet search
-        private float _dbSpstFdr001Prob; //FDR 1% probability of DB + SL iprophet search
+        private float _idsFdr001Prob; // FDR 1% probability of IDS
+        private float _icsFdr001Prob; //FDR 1% probability of ICS
 
-        //A dictionary that stores whether the global param values is correctly specified by user or not
-        //Key: Parameter name in param file; Value: if the param is correctly specified by the user
+        //A dictionary that stores whether the global param values are correctly specified by the user or not
+        //Key: Parameter names in param file; Value: if the param is correctly specified by the user
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
-            {"main directory", false},
-            {"database iprophet search file", false},
-            {"database + spectrast iprophet search file", false},
-            {"output iprophet file", false},
-            {"output csv file for filtered-out psms", false},
-            {"reference channel", false},
-            {"decoy prefixes or suffixes", false},
-            {"proteins to be excluded from normalization", false}
+            {"main directory",false},
+            {"iprophet file from identification based on database searching (ids)",false},
+            {"iprophet file from identification based on combined database and spectral library searching (ics)",false},
+            {"output iprophet file",false},
+            {"output csv file",false},
+            {"reference channel",false},
+            {"decoy prefixes or suffixes",false},
+            {"proteins to be excluded from normalization",false}
         };
 
         public string MainDir
@@ -34,20 +35,20 @@ namespace FPF
             set { _mainDir = value; }
         }
 
-        public string IproDbFile
+        public string IdsIproFile
         {
-            get { return _iproDbFile; }
-            set { _iproDbFile = value; }
+            get { return _idsIproFile; }
+            set { _idsIproFile = value; }
         }
-        public string IproDbSpstFile
+        public string IcsIproFile
         {
-            get { return _iproDbSpstFile; }
-            set { _iproDbSpstFile = value; }
+            get { return _icsIproFile; }
+            set { _icsIproFile = value; }
         }
-        public string ModIproDbSpstFile
+        public string ModIcsIproFile
         {
-            get { return _modIproDbSpstFile; }
-            set { _modIproDbSpstFile = value; }
+            get { return _modIcsIproFile; }
+            set { _modIcsIproFile = value; }
         }
         public int ChannelCnt
         {
@@ -68,19 +69,19 @@ namespace FPF
         {
             get { return _decoyKeywordLi;}
         }
-        public float DbFdr001Prob
+        public float IdsFdr001Prob
         {
-            get { return _dbFdr001Prob; }
-            set { _dbFdr001Prob = value; }
+            get { return _idsFdr001Prob; }
+            set { _idsFdr001Prob = value; }
         }
-        public float DbSpstFdr001Prob
+        public float IcsFdr001Prob
         {
-            get { return _dbSpstFdr001Prob; }
-            set { _dbSpstFdr001Prob = value; }
+            get { return _icsFdr001Prob; }
+            set { _icsFdr001Prob = value; }
         }
 
         /// <summary>
-        /// Check whether the current param name in the param file corresponds to one of the the correct param names in the dictionary.
+        /// Check whether the current param name in the param file corresponds to one of the correct param names in the dictionary.
         /// True: param name is correct; False: there is no corresponding param name
         /// </summary>
         public bool ValidateParamName (string paramNameInParamFile)
@@ -107,8 +108,8 @@ namespace FPF
 
         /// <summary>
         /// Check whether all params in _paramIsSetDic are correctly specified by the user.
-        /// Then return a list containing all parameters names that are not specified. 
-        /// If all params are correctly specified, an empty list will by returned.
+        /// Then return a list containing all parameter names that are not specified. 
+        /// If all params are correctly specified, the function returns an empty list.
         /// </summary>
         public List<string> CheckAllParamsSet()
         {

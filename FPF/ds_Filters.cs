@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 
 namespace FPF
@@ -11,34 +12,35 @@ namespace FPF
         public int featNum = 16;
         public int featMeetingCritNumCutoff = 1;
 
+
         //A dictionary that stores whether each feature in the filter is specified by user or not
         //Key: Feature name in param file; Value: if the param is specified by the user
-        private Dictionary<string, bool> _featureIsSetDic = new Dictionary<string, bool>{
-            {"charge", false},
-            {"mass", false},
-            {"peptide length", false},
-            {"average reporter ion intensity", false},
-            {"intra-peptide euclidean distance", false},
-            {"intra-protein euclidean distance", false},
-            {"number of ptms", false},
-            {"ptm ratio", false},
-            {"absolute mass difference", false},
-            {"absolute precursor m/z difference", false},
-            {"dot product", false},
-            {"deltad", false},
-            {"number of hits", false},
-            {"mean of dot products of the hits", false},
-            {"standard deviation of dot products of the hits", false},
-            {"f-value", false}
+        private Dictionary<string, bool> _featIsSetDic = new Dictionary<string, bool> {
+            {"charge",false },
+            {"mass",false },
+            {"peptide length",false },
+            {"average reporter ion intensity",false },
+            {"intra-peptide euclidean distance",false },
+            {"intra-protein euclidean distance",false },
+            {"number of ptms",false },
+            {"ptm ratio",false },
+            {"absolute mass difference",false },
+            {"absolute precursor m/z difference",false },
+            {"dot product",false },
+            {"deltad",false },
+            {"number of hits",false },
+            {"mean of dot products of the hits",false },
+            {"standard deviation of dot products of the hits",false},
+            {"f-value",false}
         };
 
         //Key: feature name; Value: for each feature, list of ranges (lowerLim, upperLim) in which PSMs should be filtered out
         private Dictionary<string, List<(double lowerLim, double upperLim)>> _filtDic = new Dictionary<string, List<(double lowerLim, double upperLim)>>();
 
         //Key: Feature name in param file; Value: if the param is specified by the user
-        public Dictionary<string, bool> FeatureIsSetDic
+        public Dictionary<string, bool> FeatIsSetDic
         {
-            get { return _featureIsSetDic; }
+            get { return _featIsSetDic; }
         }
 
         /// <summary>
@@ -55,7 +57,7 @@ namespace FPF
         /// </summary>
         public bool ValidateFeatureName(string paramNameInParamFile)
         {
-            return _featureIsSetDic.ContainsKey(paramNameInParamFile);
+            return _featIsSetDic.ContainsKey(paramNameInParamFile);
         }
 
         /// <summary>
@@ -63,7 +65,7 @@ namespace FPF
         /// </summary>
         public void SetFeatureAsTrue(string paramName)
         {
-            _featureIsSetDic[paramName] = true;
+            _featIsSetDic[paramName] = true;
         }
 
         /// <summary>
@@ -72,7 +74,7 @@ namespace FPF
         /// <returns></returns>
         public bool GetFeatureIsSet(string paramName)
         {
-            return _featureIsSetDic[paramName];
+            return _featIsSetDic[paramName];
         }
 
         /// <summary>
@@ -102,7 +104,7 @@ namespace FPF
             foreach (string filter in filterArr)
             {
                 if (filter.IndexOf('-') == -1)
-                    throw new ApplicationException(String.Format("Feature \"{0}\": wrong filter format \"{1}\"", feature, filterStr));
+                    throw new ApplicationException(String.Format("Feature \"{0}\": incorrect filter format \"{1}\"", feature, filterStr));
 
                 String[] filtLimArr = filter.Split('-').Select(filtLim => filtLim.Trim()).ToArray(); //Containing strings for lower and upper limits of one filter
                 (double lowerLim, double upperLim) filtLim;
@@ -110,12 +112,12 @@ namespace FPF
                 if (filtLimArr[0] == String.Empty)
                     filtLim.lowerLim = Double.NegativeInfinity;
                 else if(double.TryParse(filtLimArr[0], out filtLim.lowerLim) == false)
-                    throw new ApplicationException(String.Format("Feature {0}: wrong lower limit format", feature));
+                    throw new ApplicationException(String.Format("Feature {0}: incorrect lower limit value \"{1}\"", feature, filtLimArr[1]));
                 //Set up filter upper limit
                 if (filtLimArr[1] == String.Empty)
                     filtLim.upperLim = Double.PositiveInfinity;
                 else if (double.TryParse(filtLimArr[1], out filtLim.upperLim) == false)
-                    throw new ApplicationException(String.Format("Feature {0}: wrong upper limit format", feature));
+                    throw new ApplicationException(String.Format("Feature {0}: incorrect upper limit value \"{1}\"", feature, filtLimArr[1]));
                 this.AddFilter(feature, filtLim);
             }
             return;
