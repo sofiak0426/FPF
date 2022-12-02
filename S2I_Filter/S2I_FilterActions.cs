@@ -46,7 +46,7 @@ namespace S2I_Filter
         public void ReadParamFile(string paramFile)
         {
             if (!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), paramFile)))
-                throw new ApplicationException("Cannot find parameter file!");
+                throw new ApplicationException("Parameter file not found!");
             Console.WriteLine("Reading parameter file...");
             StreamReader paramReader = new StreamReader(Path.Combine(Directory.GetCurrentDirectory(), paramFile));
             string line;
@@ -67,12 +67,12 @@ namespace S2I_Filter
 
 
                 //Check if the parameter name is valid
-                string errorCode = String.Format("Error: have you modified the parameter to \"{0}\"?", lineElementsArr[0]);
+                string errorCode = String.Format("Error: some parameter has been modified to \"{0}\"?", lineElementsArr[0]);
                 if (this.paramsObj.ValidateParamName(lineElementsArr[0])) //If the line specifies a parameter
                 {
                     if (this.paramsObj.GetParamIsSet(lineElementsArr[0]) == true) //Check whether the param is specified by the user already
                     {
-                        errorCode = String.Format("Error: you have repeatedly specify the parameter \"{0}\"", lineElementsArr[0]);
+                        errorCode = String.Format("Error: the parameter \"{0}\" has been repeatedly specified", lineElementsArr[0]);
                         throw new ApplicationException(errorCode);
                     }
                     this.paramsObj.SetParamAsTrue(lineElementsArr[0]);
@@ -157,7 +157,7 @@ namespace S2I_Filter
             List<string> missingParams = this.paramsObj.CheckAllParamsSet();
             if (missingParams.Count > 0) //Some of the parameters are missing
             {
-                string errorcode = "Error: you didn't specify the values of the following parameters:\n";
+                string errorcode = "Error: the values of the following parameters are not specified:\n";
                 foreach (string missingParam in missingParams)
                     errorcode += String.Format("\"{0}\"\n", missingParam);
                 throw new ApplicationException(errorcode);
@@ -194,7 +194,7 @@ namespace S2I_Filter
         public void FilterIproByS2I()
         {
             if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.idsIproFile)))
-                throw new FileLoadException("Cannot find iProphet file from IDS!");
+                throw new FileLoadException("iProphet file from IDS not found!");
 
 
             Console.WriteLine("Filtering iProphet file and writing to new iProphet...");
