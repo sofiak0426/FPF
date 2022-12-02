@@ -135,7 +135,7 @@ namespace FPF
                 else if (str.StartsWith('-') && !str.EndsWith('-')) 
                     this._decoyKeywordLi.Add(("SUF", str.Substring(1)));
                 else
-                    throw new ApplicationException(string.Format("Error: you specified decoy-protein keywords in the wrong format: {0}", (object)str));
+                    throw new ApplicationException(string.Format("Error: decoy-protein keywords are specified in the wrong format: {0}", (object)str));
             }
         }
     }

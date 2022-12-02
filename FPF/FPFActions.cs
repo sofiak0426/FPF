@@ -29,8 +29,8 @@ namespace FPF
         int filteredOutCnt = 0;// Number of PSM that are filtered out by FPF
 
         /// <summary>
-        /// Defines thread actions by specified id. 0 for reading the iprophet file from IDS
-        /// and 1 for reading the iprophet file from ICS.
+        /// Defines thread actions by specified id. 0 for reading the iProphet file from IDS
+        /// and 1 for reading the iProphet file from ICS.
         /// </summary>
         public void DoWorkerJobs(int id)
         {
@@ -48,10 +48,10 @@ namespace FPF
         /// <summary>
         /// Performs main actions.
         /// 1. Reads Parameter File
-        /// 2. Reads the iprophet file from IDS with result reader and collect PSM IDs
-        /// 3. Reads the iprophet file from ICS with result reader and collect PSM information
-        /// 4. Calculates intra-peptide and intra-protein euclidean distance for each PSM in the iprophet file from ICS
-        /// 5. Parses the iprophet file from ICS again, filter and write to new file
+        /// 2. Reads the iProphet file from IDS with result reader and collect PSM IDs
+        /// 3. Reads the iProphet file from ICS with result reader and collect PSM information
+        /// 4. Calculates intra-peptide and intra-protein euclidean distance for each PSM in the iProphet file from ICS
+        /// 5. Parses the iProphet file from ICS again, filter and write to new file
         /// </summary>
         /// <param name="paramFile">Parameter file name</param>
         ///
@@ -67,10 +67,10 @@ namespace FPF
 
             //Read parameters file
             if (!File.Exists(paramFile))
-                throw new FileNotFoundException("Cannot find parameter file!");
+                throw new FileNotFoundException("Parameter file not found!");
             this.ReadParamFile(Path.Combine(Directory.GetCurrentDirectory(),paramFile));
 
-            //Read the two iprophet files simultaneously with two threads
+            //Read the two iProphet files simultaneously with two threads
             List<int> workerIds = new List<int>{0,1};
             Parallel.ForEach(workerIds, workerId => {
                 this.DoWorkerJobs(workerId);
@@ -117,12 +117,12 @@ namespace FPF
                 lineElementsArr[1] = lineElementsArr[1].Trim();
 
                 //Check if the parameter or feature is already specified in another line and if the name is correct or not
-                string errorCode = String.Format("Error: have you modified the parameter to \"{0}\"?", lineElementsArr[0]);
+                string errorCode = String.Format("Error: some parameter has been modified to \"{0}\"", lineElementsArr[0]);
                 if (paramsObj.ValidateParamName(lineElementsArr[0])) //If the line specifies a parameter
                 {
                     if (paramsObj.GetParamIsSet(lineElementsArr[0]) == true) //Check whether the param is specified by the user already
                     {
-                        errorCode = String.Format("Error: you have repeatedly specified the parameter \"{0}\"", lineElementsArr[0]);
+                        errorCode = String.Format("Error: the parameter \"{0}\" has been repeatedly specified", lineElementsArr[0]);
                         throw new ApplicationException(errorCode);
                     }
                     paramsObj.SetParamAsTrue(lineElementsArr[0]);
@@ -132,7 +132,7 @@ namespace FPF
                 {
                     if (filtersObj.GetFeatureIsSet(lineElementsArr[0]) == true) //Check whether the param is specified by the user already
                     {
-                        errorCode = String.Format("Error: you have repeatedly specify the filter \"{0}\"", lineElementsArr[0]);
+                        errorCode = String.Format("Error: filters of the feature \"{0}\" has been repeatedly specified", lineElementsArr[0]);
                         throw new ApplicationException(errorCode);
                     }
                     filtersObj.SetFeatureAsTrue(lineElementsArr[0]);
@@ -190,7 +190,7 @@ namespace FPF
             List<string> missingParams = paramsObj.CheckAllParamsSet();
             if (missingParams.Count > 0) //Some of the parameters are missing
             {
-                string errorcode = "Error: you didn't specify the values of the following parameters:\n";
+                string errorcode = "Error: the values of the following parameters are not specified:\n";
                 foreach (string missingParam in missingParams)
                     errorcode += String.Format("\"{0}\"\n", missingParam);
                 throw new ApplicationException(errorcode);
@@ -205,7 +205,7 @@ namespace FPF
         /// Only valid PSMs should be considered when filtering.
         /// Check whether the PSM is valid (not decoy prot, without shared peptide, with probability passing FDR) and whether the PSM contains zero reporter ion intensity.
         /// </summary>
-        /// <param name="fdr001Prob">FDR 1% probability for the iprophet file</param>
+        /// <param name="fdr001Prob">FDR 1% probability for the iProphet file</param>
         /// <param name="decoyPrefixLi">List that contains all the possible decoy prefixes and suffixes</param>
         /// <returns>-1 for invalid PSMs, 0 for valid PSMs but with missing reporter ion intensity, and 1 for valid PSMs without missing reporter ion intensity.</returns>
         public static int PsmIsValid(ds_PSM psm, ds_Peptide pep, ds_Protein prot, float fdr001Prob, List<(string, string)> decoyKeywordLi)
@@ -227,7 +227,7 @@ namespace FPF
             double psmScore;
             if (psmScoreDic.ContainsKey(keyScoreType))
                 psmScore = psmScoreDic[keyScoreType];
-            else //search hits with no iprophet score
+            else //search hits with no iProphet score
                 return -1;
             if (psmScore < fdr001Prob)
                 return -1;
@@ -242,16 +242,16 @@ namespace FPF
         }
 
         /// <summary>
-        /// 1. Parses PSMs in the iprophet file from IDS with result reader.
+        /// 1. Parses PSMs in the iProphet file from IDS with result reader.
         /// 2. Adds PSMs which are valid to the list.
-        /// 3. Calculates normalization ratio using the iprophet file from IDS.
+        /// 3. Calculates normalization ratio using the iProphet file from IDS.
         /// </summary>
         private void ReadIdsIpro()
         {
             Console.WriteLine("Parsing the iProphet file from IDS...");
             PepXmlProtXmlReader idsIproReader = new PepXmlProtXmlReader();
             if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IdsIproFile)))
-                throw new FileNotFoundException("Cannot find the iProphet file from IDS!");
+                throw new FileNotFoundException("iProphet file from IDS not found!");
             this.dataContainerObj.idsIproResult = idsIproReader.ReadFiles(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IdsIproFile), "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
@@ -288,14 +288,14 @@ namespace FPF
         }
 
         /// <summary>
-        /// Parses iprophet file from ICS with result reader.
+        /// Parses iProphet file from ICS with result reader.
         /// </summary>
         private void ReadIcsIpro()
         {
-            Console.WriteLine("Parsing the iprophet file from ICS...");
+            Console.WriteLine("Parsing the iProphet file from ICS...");
             PepXmlProtXmlReader icsIproReader = new PepXmlProtXmlReader();
             if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IcsIproFile)))
-                throw new FileNotFoundException("Cannot find iprophet file from ICS!");
+                throw new FileNotFoundException("iProphet file from ICS not found!");
             this.dataContainerObj.icsIproResult = icsIproReader.ReadFiles(Path.Combine(this.paramsObj.MainDir,this.paramsObj.IcsIproFile), "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
@@ -304,7 +304,7 @@ namespace FPF
         }
 
         /// <summary>
-        /// Collects feature values of valid PSMs in the iprophet file from ICS to icsPsmFFDic.
+        /// Collects feature values of valid PSMs in the iProphet file from ICS to icsPsmFFDic.
         /// </summary>
         private void CollectPsmFF_FromProtein_Dic()
         {
@@ -377,7 +377,7 @@ namespace FPF
                 }
             }
             Console.Write("\n");
-            Console.WriteLine(String.Format("Number of Valid PSMs in the iprophet file from ICS: {0}", this.dataContainerObj.icsPsmFFDic.Count()));
+            Console.WriteLine(String.Format("Number of Valid PSMs in the iProphet file from ICS: {0}", this.dataContainerObj.icsPsmFFDic.Count()));
             //Write the total count of PSMs with more than one hit into log file
             this.logFileLines.Add(String.Format("{0} at total.", this.notSingleHitCnt));
         }
@@ -441,7 +441,7 @@ namespace FPF
         }
 
         /// <summary>
-        /// Calculates intra-peptide and intra-protein euclidean distances of all valid PSMs in the iprophet file from ICS
+        /// Calculates intra-peptide and intra-protein euclidean distances of all valid PSMs in the iProphet file from ICS
         /// </summary>
         private void CalOverallEuDist()
         {
@@ -560,11 +560,11 @@ namespace FPF
         }
 
         /// <summary>
-        /// Reads the iprophet file from ICS, filter by features and write to new file
+        /// Reads the iProphet file from ICS, filter by features and write to new file
         /// </summary>
         private void FilterIcsIproFile()
         {
-            Console.WriteLine("Filtering the iprophet file from ICS and writing to new iprophet file...");
+            Console.WriteLine("Filtering the iProphet file from ICS and writing to new iProphet file...");
             this.logFileLines.Add("Warning: PSMs taken into account by feature filter but with missing SpectraST feature values");
             //Xml reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
@@ -728,7 +728,7 @@ namespace FPF
                         throw new ApplicationException(String.Format("Feature name error:{0}",filtsForOneFeat.Key));
                 }
 
-                if (featValue == -10000) //In some PSMS, there may be some SpectraST features not written in iprophet file
+                if (featValue == -10000) //In some PSMS, there may be some SpectraST features not written in iProphet file
                 {
                     b_noSpstFeat = true;
                     continue;

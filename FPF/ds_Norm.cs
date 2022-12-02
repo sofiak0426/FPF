@@ -23,7 +23,7 @@ namespace FPF
                 else if (stdProtNameKeywordStr.StartsWith('-')) //Suffix
                     this._stdNormKeywordLi.Add(("SUF", stdProtNameKeywordStr.Substring(1)));
                 else
-                    throw new ApplicationException(String.Format("Error: you specified standard-protein keywords in the wrong format: {0}", stdProtNameKeywordStr));
+                    throw new ApplicationException(String.Format("Error: standard-protein keywords are specified in the wrong format: {0}", stdProtNameKeywordStr));
             }           
         }
 
