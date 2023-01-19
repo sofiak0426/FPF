@@ -1,7 +1,7 @@
 Main Directory: C:/FPF_data
 iProphet File from Identification Based on Database Searching (IDS): a14-07151.ipro.pep.xml
 iProphet File from Identification Based on Combined Database and Spectral Library Searching (ICS): a14-07151_spec.ipro.pep.xml
-Output iProphet       File: mod_a14-07151_spec.ipro.pep.xml
+Output iProphet File: mod_a14-07151_spec.ipro.pep.xml
 Output Csv File: basel_filtered_out.csv
 Reference Channel: 1
 

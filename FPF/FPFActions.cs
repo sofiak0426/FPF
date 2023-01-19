@@ -251,7 +251,7 @@ namespace FPF
             Console.WriteLine("Parsing the iProphet file from IDS...");
             PepXmlProtXmlReader idsIproReader = new PepXmlProtXmlReader();
             if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IdsIproFile)))
-                throw new FileNotFoundException("iProphet file from IDS not found!");
+                throw new FileNotFoundException(String.Format("iProphet file from IDS \"{0}\" not found!", Path.Combine(this.paramsObj.MainDir, this.paramsObj.IdsIproFile)));
             this.dataContainerObj.idsIproResult = idsIproReader.ReadFiles(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IdsIproFile), "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
@@ -295,7 +295,7 @@ namespace FPF
             Console.WriteLine("Parsing the iProphet file from ICS...");
             PepXmlProtXmlReader icsIproReader = new PepXmlProtXmlReader();
             if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IcsIproFile)))
-                throw new FileNotFoundException("iProphet file from ICS not found!");
+                throw new FileNotFoundException(String.Format("iProphet file from ICS \"{0}\" not found!", Path.Combine(this.paramsObj.MainDir, this.paramsObj.IcsIproFile)));
             this.dataContainerObj.icsIproResult = icsIproReader.ReadFiles(Path.Combine(this.paramsObj.MainDir,this.paramsObj.IcsIproFile), "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
