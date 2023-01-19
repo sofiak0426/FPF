@@ -67,7 +67,7 @@ namespace FPF
 
             //Read parameters file
             if (!File.Exists(paramFile))
-                throw new FileNotFoundException("Parameter file not found!");
+                throw new FileNotFoundException(String.Format("Parameter file \"{0}\" not found!", paramFile));
             this.ReadParamFile(Path.Combine(Directory.GetCurrentDirectory(),paramFile));
 
             //Read the two iProphet files simultaneously with two threads
