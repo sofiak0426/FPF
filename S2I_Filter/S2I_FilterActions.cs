@@ -46,7 +46,8 @@ namespace S2I_Filter
         public void ReadParamFile(string paramFile)
         {
             if (!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), paramFile)))
-                throw new ApplicationException("Parameter file not found!");
+                throw new ApplicationException(String.Format("Parameter file \"{0}\" not found!", 
+                    Path.Combine(Directory.GetCurrentDirectory(), paramFile)));
             Console.WriteLine("Reading parameter file...");
             StreamReader paramReader = new StreamReader(Path.Combine(Directory.GetCurrentDirectory(), paramFile));
             string line;
@@ -194,7 +195,8 @@ namespace S2I_Filter
         public void FilterIproByS2I()
         {
             if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.idsIproFile)))
-                throw new FileLoadException("iProphet file from IDS not found!");
+                throw new FileLoadException(String.Format("iProphet file from IDS \"{0}\" not found!", 
+                    Path.Combine(this.paramsObj.MainDir, this.paramsObj.idsIproFile)));
 
 
             Console.WriteLine("Filtering iProphet file and writing to new iProphet...");
