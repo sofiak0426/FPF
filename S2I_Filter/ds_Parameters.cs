@@ -27,7 +27,7 @@ namespace S2I_Filter
         //Key: Parameter name in param file; Value: if the param is correctly specified by the user
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
             {"main directory", false},
-            {"iprophet file from identification based on database searching (ids)", false},
+            {"iprophet file from identification based on db searching", false},
             {"datatype", false},
             {"centroid window size", false},
             {"isolation window size", false},

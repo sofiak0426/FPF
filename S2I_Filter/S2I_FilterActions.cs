@@ -89,7 +89,7 @@ namespace S2I_Filter
                             this.paramsObj.MainDir = lineElementsArr[1];
                             break;
                         }
-                    case "iprophet file from identification based on database searching (ids)":
+                    case "iprophet file from identification based on db searching":
                         {
                             this.paramsObj.idsIproFile = lineElementsArr[1];
                             break;
