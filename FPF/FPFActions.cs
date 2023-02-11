@@ -148,10 +148,10 @@ namespace FPF
                     case "main directory":
                         this.paramsObj.MainDir = lineElementsArr[1];
                         break;
-                    case "iprophet file from identification based on database searching (ids)":
+                    case "iprophet file from identification based on db searching":
                         this.paramsObj.IdsIproFile = lineElementsArr[1];
                         break;
-                    case "iprophet file from identification based on combined database and spectral library searching (ics)":
+                    case "iprophet file from identification based on db+sl searching":
                         this.paramsObj.IcsIproFile = lineElementsArr[1];
                         break;
                     case "output iprophet file":

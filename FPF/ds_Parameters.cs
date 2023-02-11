@@ -20,8 +20,8 @@ namespace FPF
         //Key: Parameter names in param file; Value: if the param is correctly specified by the user
         private Dictionary<string, bool> _paramIsSetDic = new Dictionary<string, bool>{
             {"main directory",false},
-            {"iprophet file from identification based on database searching (ids)",false},
-            {"iprophet file from identification based on combined database and spectral library searching (ics)",false},
+            {"iprophet file from identification based on db searching",false},
+            {"iprophet file from identification based on db+sl searching",false},
             {"output iprophet file",false},
             {"output csv file",false},
             {"reference channel",false},
