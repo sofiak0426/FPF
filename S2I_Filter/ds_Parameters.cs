@@ -11,7 +11,7 @@ namespace S2I_Filter
         public List<string> _rawDataLi = new List<string>();
 
         public string MainDir { get; set; } 
-        public string idsIproFile { get; set; }
+        public string dbIproFile { get; set; }
         public string DataType { get; set; }
         public double CenWinSize { get; set; }
         public double IsoWinSize { get; set; }
