@@ -1,0 +1,8 @@
+D:\ProjectEdit\SearchResultReader\ResultReader\bin\x64\Debug\ResultReader.dll
+D:\ProjectEdit\SearchResultReader\ResultReader\bin\x64\Debug\ResultReader.pdb
+D:\ProjectEdit\SearchResultReader\ResultReader\bin\x64\Debug\ICSharpCode.SharpZipLib.dll
+D:\ProjectEdit\SearchResultReader\ResultReader\bin\x64\Debug\NPOI.dll
+D:\ProjectEdit\SearchResultReader\ResultReader\bin\x64\Debug\NPOI.xml
+D:\ProjectEdit\SearchResultReader\ResultReader\obj\x64\Debug\ResultReader.dll
+D:\ProjectEdit\SearchResultReader\ResultReader\obj\x64\Debug\ResultReader.pdb
+D:\ProjectEdit\SearchResultReader\ResultReader\obj\x64\Debug\ResultReader.csprojResolveAssemblyReference.cache

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "iproxml_filter": {
+      "commandName": "Project",
+      "commandLineArgs": "basel_params.txt"
+    }
+  }
+}

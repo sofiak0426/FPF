@@ -1,0 +1,28 @@
+﻿<Properties StartupConfiguration="{40A885B8-9011-4F01-9BA5-E3C6BD7479AF}|Default">
+  <MonoDevelop.Ide.ItemProperties.iproxml__filter PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="iproxml_filter/FPFActions.cs">
+    <Files>
+      <File FileName="iproxml_filter/Program.cs" Line="9" Column="30" />
+      <File FileName="iproxml_filter/FPFActions.cs" Line="22" Column="1" />
+      <File FileName="iproxml_filter/ds_Filters.cs" Line="12" Column="26" />
+      <File FileName="iproxml_filter/ds_DataContainer.cs" Line="14" Column="1" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="iproxml_filter" expanded="True">
+            <Node name="iproxml_filter" expanded="True">
+              <Node name="FPFActions.cs" selected="True" />
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+</Properties>

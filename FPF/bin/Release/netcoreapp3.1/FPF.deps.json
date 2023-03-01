@@ -1,0 +1,62 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v3.1",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v3.1": {
+      "FPF/1.0.0": {
+        "dependencies": {
+          "ResultReader": "1.0.0"
+        },
+        "runtime": {
+          "FPF.dll": {}
+        }
+      },
+      "ResultReader/1.0.0": {
+        "runtime": {
+          "ResultReader.dll": {}
+        }
+      },
+      "NPOI/2.1.3.1": {
+        "runtime": {
+          "NPOI.dll": {
+            "assemblyVersion": "2.1.3.1",
+            "fileVersion": "2.1.3.1"
+          }
+        }
+      },
+      "ICSharpCode.SharpZipLib/0.86.0.518": {
+        "runtime": {
+          "ICSharpCode.SharpZipLib.dll": {
+            "assemblyVersion": "0.86.0.518",
+            "fileVersion": "0.86.0.518"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "FPF/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ResultReader/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "NPOI/2.1.3.1": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ICSharpCode.SharpZipLib/0.86.0.518": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

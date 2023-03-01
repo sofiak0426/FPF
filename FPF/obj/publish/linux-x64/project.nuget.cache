@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "EP3Trd1O90KO/+HEt4C/0hzVXQtpej1xWhJVO2Bh5jmU+f6xXCvEirF/1KvNSrVQCHanyv/Xq/y4PjQQYHshtA==",
+  "success": true,
+  "projectFilePath": "C:\\FPF\\FPF\\FPF.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.netcore.app.runtime.linux-x64\\3.1.9\\microsoft.netcore.app.runtime.linux-x64.3.1.9.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.linux-x64\\3.1.9\\microsoft.aspnetcore.app.runtime.linux-x64.3.1.9.nupkg.sha512",
+    "C:\\Users\\powuser\\.nuget\\packages\\microsoft.netcore.app.host.linux-x64\\3.1.9\\microsoft.netcore.app.host.linux-x64.3.1.9.nupkg.sha512"
+  ],
+  "logs": []
+}
