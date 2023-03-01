@@ -5,9 +5,9 @@ namespace FPF
 {
     public class ds_DataContainer
     {
-        public List<string> idsPsmIdLi = new List<string>(); //The list for ID of all valid PSMs from IDS
-        public Dictionary<string, ds_Psm_ForFilter> icsPsmFFDic = new Dictionary <string, ds_Psm_ForFilter>();//Key: PSM ID, Value: ds_Psm_ForFilter: information for each valid PSM from ICS
-        public ds_SearchResult idsIproResult; //iprophet file from IDS read by ResultReader
-        public ds_SearchResult icsIproResult; //iprophet file from ICS read by ResultReader
+        public List<string> dbPsmIdLi = new List<string>(); //The list for ID of all valid PSMs from DB searching
+        public Dictionary<string, ds_Psm_ForFilter> dbslPsmFFDic = new Dictionary <string, ds_Psm_ForFilter>();//Key: PSM ID, Value: ds_Psm_ForFilter: information for each valid PSM from identification based on DB+SL searching
+        public ds_SearchResult dbIproResult; //iprophet file fromidentification based on DB searching read by ResultReader
+        public ds_SearchResult dbslIproResult; //iprophet file from identification based on DB+SL searching read by ResultReader
     }
 }

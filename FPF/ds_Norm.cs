@@ -72,7 +72,7 @@ namespace FPF
                 {
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
-                        if (FPFActions.PsmIsValid(psm, pep.Value, prot.Value, parametersObj.IdsFdr001Prob, parametersObj.DecoyKeywordLi) != 1) //invalid PSM or with zero reporter ion intenstiy
+                        if (FPFActions.PsmIsValid(psm, pep.Value, prot.Value, parametersObj.DbFdr001Prob, parametersObj.DecoyKeywordLi) != 1) //invalid PSM or with zero reporter ion intenstiy
                             continue;
                         for (int i = 0; i < parametersObj.ChannelCnt; i++)
                             chanAllIntenLi[i].Add(psm.libra_ChanIntenDi.Values.ToList()[i]);

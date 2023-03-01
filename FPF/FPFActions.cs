@@ -29,18 +29,18 @@ namespace FPF
         int filteredOutCnt = 0;// Number of PSM that are filtered out by FPF
 
         /// <summary>
-        /// Defines thread actions by specified id. 0 for reading the iProphet file from IDS
-        /// and 1 for reading the iProphet file from ICS.
+        /// Defines thread actions by specified id. 0 for reading the iProphet file from identification based on DB searching
+        /// and 1 for reading the iProphet file from identification based on DB+SL searching.
         /// </summary>
         public void DoWorkerJobs(int id)
         {
             switch (id)
             {
                 case 0:
-                    this.ReadIdsIpro();
+                    this.ReadDbIpro();
                     break;
                 case 1:
-                    this.ReadIcsIpro();
+                    this.ReadDbslIpro();
                     break;
             }
         }
@@ -48,10 +48,10 @@ namespace FPF
         /// <summary>
         /// Performs main actions.
         /// 1. Reads Parameter File
-        /// 2. Reads the iProphet file from IDS with result reader and collect PSM IDs
-        /// 3. Reads the iProphet file from ICS with result reader and collect PSM information
-        /// 4. Calculates intra-peptide and intra-protein euclidean distance for each PSM in the iProphet file from ICS
-        /// 5. Parses the iProphet file from ICS again, filter and write to new file
+        /// 2. Reads the iProphet file from DB searching with result reader and collect PSM IDs
+        /// 3. Reads the iProphet file from identification based on DB+SL searching with result reader and collect PSM information
+        /// 4. Calculates intra-peptide and intra-protein euclidean distance for each PSM in the iProphet file from identification based on DB+SL searching
+        /// 5. Parses the iProphet file from identification based on DB+SL searching again, filter and write to new file
         /// </summary>
         /// <param name="paramFile">Parameter file name</param>
         ///
@@ -79,7 +79,7 @@ namespace FPF
             //Collect PSM information, calculate distances and filter
             this.CollectPsmFF_FromProtein_Dic();
             this.CalOverallEuDist();
-            this.FilterIcsIproFile();
+            this.FilterDbslIproFile();
 
             //Write result to filteredoutFile
             if (this.filteredOutPsmsObj.FilteredOutFile != "")
@@ -149,13 +149,13 @@ namespace FPF
                         this.paramsObj.MainDir = lineElementsArr[1];
                         break;
                     case "iprophet file from identification based on db searching":
-                        this.paramsObj.IdsIproFile = lineElementsArr[1];
+                        this.paramsObj.DbIproFile = lineElementsArr[1];
                         break;
                     case "iprophet file from identification based on db+sl searching":
-                        this.paramsObj.IcsIproFile = lineElementsArr[1];
+                        this.paramsObj.DbslIproFile = lineElementsArr[1];
                         break;
                     case "output iprophet file":
-                        this.paramsObj.ModIcsIproFile = lineElementsArr[1];
+                        this.paramsObj.ModDbslIproFile = lineElementsArr[1];
                         break;
                     case "output csv file":
                         this.filteredOutPsmsObj.FilteredOutFile =  lineElementsArr[1];
@@ -242,81 +242,81 @@ namespace FPF
         }
 
         /// <summary>
-        /// 1. Parses PSMs in the iProphet file from IDS with result reader.
+        /// 1. Parses PSMs in the iProphet file from identification based on DB searching with result reader.
         /// 2. Adds PSMs which are valid to the list.
-        /// 3. Calculates normalization ratio using the iProphet file from IDS.
+        /// 3. Calculates normalization ratio using the iProphet file from identification based on DB searching.
         /// </summary>
-        private void ReadIdsIpro()
+        private void ReadDbIpro()
         {
-            Console.WriteLine("Parsing the iProphet file from IDS...");
-            PepXmlProtXmlReader idsIproReader = new PepXmlProtXmlReader();
-            if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IdsIproFile)))
-                throw new FileNotFoundException(String.Format("iProphet file from IDS \"{0}\" not found!", Path.Combine(this.paramsObj.MainDir, this.paramsObj.IdsIproFile)));
-            this.dataContainerObj.idsIproResult = idsIproReader.ReadFiles(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IdsIproFile), "",
+            Console.WriteLine("Parsing the iProphet file from identification based on DB searching...");
+            PepXmlProtXmlReader dbIproReader = new PepXmlProtXmlReader();
+            if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.DbIproFile)))
+                throw new FileNotFoundException(String.Format("iProphet file from identification based on DB searching \"{0}\" not found!", Path.Combine(this.paramsObj.MainDir, this.paramsObj.DbIproFile)));
+            this.dataContainerObj.dbIproResult = dbIproReader.ReadFiles(Path.Combine(this.paramsObj.MainDir, this.paramsObj.DbIproFile), "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
             //get FDR 1% probability
-            this.paramsObj.IdsFdr001Prob = dataContainerObj.idsIproResult.GetPepMinProbForFDR(0.01f, "");
+            this.paramsObj.DbFdr001Prob = dataContainerObj.dbIproResult.GetPepMinProbForFDR(0.01f, "");
 
             //Check PSM validity
-            foreach (KeyValuePair<string, ds_Protein> prot in this.dataContainerObj.idsIproResult.Protein_Dic)
+            foreach (KeyValuePair<string, ds_Protein> prot in this.dataContainerObj.dbIproResult.Protein_Dic)
             {
                 foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
                 {
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
                         //If PSM is valid, add PSM name to the list
-                        if (PsmIsValid(psm, pep.Value, prot.Value, this.paramsObj.IdsFdr001Prob, this.paramsObj.DecoyKeywordLi) != -1 
-                            && !this.dataContainerObj.idsPsmIdLi.Contains(psm.QueryNumber))
-                            this.dataContainerObj.idsPsmIdLi.Add(psm.QueryNumber);
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.paramsObj.DbFdr001Prob, this.paramsObj.DecoyKeywordLi) != -1 
+                            && !this.dataContainerObj.dbPsmIdLi.Contains(psm.QueryNumber))
+                            this.dataContainerObj.dbPsmIdLi.Add(psm.QueryNumber);
                     }
                 }
             }
 
             //Get the number of channels
-            this.paramsObj.ChannelCnt = this.dataContainerObj.idsIproResult.Protein_Dic.First<KeyValuePair<string, ds_Protein>>().Value.Peptide_Dic.First<KeyValuePair<string, ds_Peptide>>().Value.PsmList[0].libra_ChanIntenDi.Count<KeyValuePair<int, double>>();
+            this.paramsObj.ChannelCnt = this.dataContainerObj.dbIproResult.Protein_Dic.First<KeyValuePair<string, ds_Protein>>().Value.Peptide_Dic.First<KeyValuePair<string, ds_Peptide>>().Value.PsmList[0].libra_ChanIntenDi.Count<KeyValuePair<int, double>>();
             //Check whether reference channel is within the valid range
             if (this.paramsObj.RefChannel > this.paramsObj.ChannelCnt)
                 throw new ApplicationException(String.Format("Error: reference channel number out of range!"));
 
             //Calculate ratio for normalization
-            this.normObj.GetChannelMed(this.paramsObj, this.dataContainerObj.idsIproResult);
+            this.normObj.GetChannelMed(this.paramsObj, this.dataContainerObj.dbIproResult);
 
-            //Print IDS PSM count
-            Console.WriteLine(String.Format("Number of Valid PSMs in the iProphet file from IDS: {0}", this.dataContainerObj.idsPsmIdLi.Count()));
+            //Print PSM count of identification based on DB searching
+            Console.WriteLine(String.Format("Number of Valid PSMs in the iProphet file from identification based on DB searching: {0}", this.dataContainerObj.dbPsmIdLi.Count()));
             return;
         }
 
         /// <summary>
-        /// Parses iProphet file from ICS with result reader.
+        /// Parses iProphet file from identification based on DB+SL searching with result reader.
         /// </summary>
-        private void ReadIcsIpro()
+        private void ReadDbslIpro()
         {
-            Console.WriteLine("Parsing the iProphet file from ICS...");
-            PepXmlProtXmlReader icsIproReader = new PepXmlProtXmlReader();
-            if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IcsIproFile)))
-                throw new FileNotFoundException(String.Format("iProphet file from ICS \"{0}\" not found!", Path.Combine(this.paramsObj.MainDir, this.paramsObj.IcsIproFile)));
-            this.dataContainerObj.icsIproResult = icsIproReader.ReadFiles(Path.Combine(this.paramsObj.MainDir,this.paramsObj.IcsIproFile), "",
+            Console.WriteLine("Parsing identification results based on DB searching...");
+            PepXmlProtXmlReader dbslIproReader = new PepXmlProtXmlReader();
+            if (!File.Exists(Path.Combine(this.paramsObj.MainDir, this.paramsObj.DbslIproFile)))
+                throw new FileNotFoundException(String.Format("iProphet file from identification results based on identification based on DB+SL searching \"{0}\" not found!", Path.Combine(this.paramsObj.MainDir, this.paramsObj.DbslIproFile)));
+            this.dataContainerObj.dbslIproResult = dbslIproReader.ReadFiles(Path.Combine(this.paramsObj.MainDir,this.paramsObj.DbslIproFile), "",
                 XmlParser_Action.Read_PepXml, SearchResult_Source.TPP_PepXml);
 
             //get fdr < 1% probability
-            this.paramsObj.IcsFdr001Prob = this.dataContainerObj.icsIproResult.GetPepMinProbForFDR(0.01f, "");
+            this.paramsObj.DbslFdr001Prob = this.dataContainerObj.dbslIproResult.GetPepMinProbForFDR(0.01f, "");
         }
 
         /// <summary>
-        /// Collects feature values of valid PSMs in the iProphet file from ICS to icsPsmFFDic.
+        /// Collects feature values of valid PSMs in the iProphet file from identification based on DB+SL searching to dbslPsmFFDic.
         /// </summary>
         private void CollectPsmFF_FromProtein_Dic()
         {
             Console.Write("Collecting PSM information");
             int psmCnt = 0; //For console
-            foreach (KeyValuePair<string, ds_Protein> prot in this.dataContainerObj.icsIproResult.Protein_Dic)
+            foreach (KeyValuePair<string, ds_Protein> prot in this.dataContainerObj.dbslIproResult.Protein_Dic)
             {
                 foreach (KeyValuePair<string, ds_Peptide> pep in prot.Value.Peptide_Dic)
                 {
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
-                        int int_isValid = PsmIsValid(psm, pep.Value, prot.Value, this.paramsObj.IcsFdr001Prob, this.paramsObj.DecoyKeywordLi);
+                        int int_isValid = PsmIsValid(psm, pep.Value, prot.Value, this.paramsObj.DbslFdr001Prob, this.paramsObj.DecoyKeywordLi);
                         if (int_isValid == -1) //Invalid PSM
                             continue;
 
@@ -356,11 +356,11 @@ namespace FPF
                             psmInfoObj.AvgInten = Math.Round(psmNormIntenLi.Average(),4);
                         }
 
-                        //Add information to icsPsmFFDic if the current hit is the only hit for this PSM.
+                        //Add information to dbslPsmFFDic if the current hit is the only hit for this PSM.
                         //If there is more than one hit, merely add the PSM name to log file and use the first hit.
                         try
                         {
-                            this.dataContainerObj.icsPsmFFDic.Add(psm.QueryNumber, psmInfoObj);
+                            this.dataContainerObj.dbslPsmFFDic.Add(psm.QueryNumber, psmInfoObj);
                         }
                         catch
                         {
@@ -377,7 +377,7 @@ namespace FPF
                 }
             }
             Console.Write("\n");
-            Console.WriteLine(String.Format("Number of Valid PSMs in the iProphet file from ICS: {0}", this.dataContainerObj.icsPsmFFDic.Count()));
+            Console.WriteLine(String.Format("Number of Valid PSMs in the iProphet file from identification based on DB+SL seraching: {0}", this.dataContainerObj.dbslPsmFFDic.Count()));
             //Write the total count of PSMs with more than one hit into log file
             this.logFileLines.Add(String.Format("{0} at total.", this.notSingleHitCnt));
         }
@@ -441,7 +441,7 @@ namespace FPF
         }
 
         /// <summary>
-        /// Calculates intra-peptide and intra-protein euclidean distances of all valid PSMs in the iProphet file from ICS
+        /// Calculates intra-peptide and intra-protein euclidean distances of all valid PSMs in the iProphet file from identification based on DB+SL searching
         /// </summary>
         private void CalOverallEuDist()
         {
@@ -461,7 +461,7 @@ namespace FPF
             List<List<double>> psmsInPepRatioLi = new List<List<double>>(); //Stores channel ratio of all PSMs in this peptide
             List<double> psmsInPepTotalRatioLi = new List<double>(); //Stores channel ratio sum of all PSMs in this peptide for further use
 
-            foreach (KeyValuePair<string, ds_Protein> prot in dataContainerObj.icsIproResult.Protein_Dic)
+            foreach (KeyValuePair<string, ds_Protein> prot in dataContainerObj.dbslIproResult.Protein_Dic)
             {
                 protCnt++;
                 //Write to console
@@ -484,7 +484,7 @@ namespace FPF
                     foreach (ds_PSM psm in pep.Value.PsmList)
                     {
                         //Check PSM validity, only calculate euclidean between valid PSMs without missing intensity
-                        if (PsmIsValid(psm, pep.Value, prot.Value, this.paramsObj.IcsFdr001Prob, this.paramsObj.DecoyKeywordLi)!= 1)
+                        if (PsmIsValid(psm, pep.Value, prot.Value, this.paramsObj.DbslFdr001Prob, this.paramsObj.DecoyKeywordLi)!= 1)
                             continue;
 
                         //get intensity and ratio
@@ -520,7 +520,7 @@ namespace FPF
                     {
                         intraPepEuDistLi = GetEuDistFromRatio(psmsInPepRatioLi, psmsInPepTotalRatioLi);
                         for (int i = 0; i < psmsInPepNameLi.Count; i++)
-                            this.dataContainerObj.icsPsmFFDic[psmsInPepNameLi[i]].IntraPepEuDist = intraPepEuDistLi[i];
+                            this.dataContainerObj.dbslPsmFFDic[psmsInPepNameLi[i]].IntraPepEuDist = intraPepEuDistLi[i];
                     }
 
                     psmsInPepNameLi.Clear();
@@ -533,18 +533,18 @@ namespace FPF
                     continue;
                 List<double> intraProtEuDistLi = GetEuDistFromRatio(psmsInProtRatioLi, psmsInProtTotalRatioLi);
                 for (int i = 0; i < psmsInProtNameLi.Count; i++)
-                    this.dataContainerObj.icsPsmFFDic[psmsInProtNameLi[i]].IntraProtEuDist = intraProtEuDistLi[i];
+                    this.dataContainerObj.dbslPsmFFDic[psmsInProtNameLi[i]].IntraProtEuDist = intraProtEuDistLi[i];
 
                 //Calculate intra-peptide euclidean distance for peptides with only one PSM and store to dictionary
                 if (singlePsmPepNameLi.Count == 0)
                     continue;
                 else if (singlePsmPepNameLi.Count == 1)
-                    this.dataContainerObj.icsPsmFFDic[singlePsmPepNameLi[0]].IntraPepEuDist = 0.0;
+                    this.dataContainerObj.dbslPsmFFDic[singlePsmPepNameLi[0]].IntraPepEuDist = 0.0;
                 else
                 {
                     List<double> singlePsmIntraPepEuDistLi = GetEuDistFromRatio(singlePsmPepRatioLi, singlePsmPepTotalRatioLi);
                     for (int i = 0; i < singlePsmPepNameLi.Count; i++)
-                        this.dataContainerObj.icsPsmFFDic[singlePsmPepNameLi[i]].IntraPepEuDist = singlePsmIntraPepEuDistLi[i];
+                        this.dataContainerObj.dbslPsmFFDic[singlePsmPepNameLi[i]].IntraPepEuDist = singlePsmIntraPepEuDistLi[i];
                 }
 
                 //Clean lists
@@ -560,68 +560,68 @@ namespace FPF
         }
 
         /// <summary>
-        /// Reads the iProphet file from ICS, filter by features and write to new file
+        /// Reads the iProphet file from identification based on DB+SL searching, filter by features and write to new file
         /// </summary>
-        private void FilterIcsIproFile()
+        private void FilterDbslIproFile()
         {
-            Console.WriteLine("Filtering the iProphet file from ICS and writing to new iProphet file...");
+            Console.WriteLine("Filtering the iProphet file from identification based on DB+SL searching and writing to new iProphet file...");
             this.logFileLines.Add("Warning: PSMs taken into account by feature filter but with missing SpectraST feature values");
             //Xml reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
-            XmlReader icsIproReader = XmlReader.Create(Path.Combine(this.paramsObj.MainDir, this.paramsObj.IcsIproFile), readerSettings);
-            XmlReader msmsRunReader = icsIproReader;
-            icsIproReader.Read(); //Jump to first node
+            XmlReader dbslIproReader = XmlReader.Create(Path.Combine(this.paramsObj.MainDir, this.paramsObj.DbslIproFile), readerSettings);
+            XmlReader msmsRunReader = dbslIproReader;
+            dbslIproReader.Read(); //Jump to first node
             //Xml writer setup
             XmlWriterSettings writerSettings = new XmlWriterSettings {Indent = true, IndentChars = " "};
-            XmlWriter modIcsIproWriter = XmlWriter.Create(Path.Combine(this.paramsObj.MainDir, this.paramsObj.ModIcsIproFile), writerSettings);
+            XmlWriter modDbslIproWriter = XmlWriter.Create(Path.Combine(this.paramsObj.MainDir, this.paramsObj.ModDbslIproFile), writerSettings);
             while (true)
             {
-                if (icsIproReader.Name == "xml") //read xml header
+                if (dbslIproReader.Name == "xml") //read xml header
                 {
-                    modIcsIproWriter.WriteNode(icsIproReader, false);
+                    modDbslIproWriter.WriteNode(dbslIproReader, false);
                     continue;
                 }
-                else if (icsIproReader.Name == "msms_pipeline_analysis" && icsIproReader.NodeType == XmlNodeType.Element) //Start element of msms_pipeline_analysis
+                else if (dbslIproReader.Name == "msms_pipeline_analysis" && dbslIproReader.NodeType == XmlNodeType.Element) //Start element of msms_pipeline_analysis
                 {
-                    modIcsIproWriter.WriteStartElement(icsIproReader.Name, icsIproReader.GetAttribute("xmlns"));
-                    modIcsIproWriter.WriteAttributeString("date", icsIproReader.GetAttribute("date"));
-                    modIcsIproWriter.WriteAttributeString("xsi", "schemaLocation", icsIproReader.GetAttribute("xmlns:xsi"), icsIproReader.GetAttribute("xsi:schemaLocation"));
-                    modIcsIproWriter.WriteAttributeString("summary_xml", icsIproReader.GetAttribute("summary_xml"));
+                    modDbslIproWriter.WriteStartElement(dbslIproReader.Name, dbslIproReader.GetAttribute("xmlns"));
+                    modDbslIproWriter.WriteAttributeString("date", dbslIproReader.GetAttribute("date"));
+                    modDbslIproWriter.WriteAttributeString("xsi", "schemaLocation", dbslIproReader.GetAttribute("xmlns:xsi"), dbslIproReader.GetAttribute("xsi:schemaLocation"));
+                    modDbslIproWriter.WriteAttributeString("summary_xml", dbslIproReader.GetAttribute("summary_xml"));
                 }
-                else if (icsIproReader.Name == "msms_pipeline_analysis" && icsIproReader.NodeType == XmlNodeType.EndElement) //End element of msms_pipeline_analysis
+                else if (dbslIproReader.Name == "msms_pipeline_analysis" && dbslIproReader.NodeType == XmlNodeType.EndElement) //End element of msms_pipeline_analysis
                 {
-                    modIcsIproWriter.WriteEndElement();
+                    modDbslIproWriter.WriteEndElement();
                 }
-                else if (icsIproReader.Name == "analysis_summary") //Other analysis summaries
+                else if (dbslIproReader.Name == "analysis_summary") //Other analysis summaries
                 {
-                    modIcsIproWriter.WriteNode(icsIproReader, false);
+                    modDbslIproWriter.WriteNode(dbslIproReader, false);
                     continue;
                 }
-                else if (icsIproReader.Name == "msms_run_summary") //Contain PSM information
+                else if (dbslIproReader.Name == "msms_run_summary") //Contain PSM information
                 {
-                    modIcsIproWriter.WriteStartElement(icsIproReader.Name);
-                    modIcsIproWriter.WriteAttributes(icsIproReader,false);
-                    msmsRunReader = icsIproReader.ReadSubtree();
-                    this.ReadMsmsRun(msmsRunReader, modIcsIproWriter);
-                    modIcsIproWriter.WriteEndElement();
-                    icsIproReader.Skip();
+                    modDbslIproWriter.WriteStartElement(dbslIproReader.Name);
+                    modDbslIproWriter.WriteAttributes(dbslIproReader,false);
+                    msmsRunReader = dbslIproReader.ReadSubtree();
+                    this.ReadMsmsRun(msmsRunReader, modDbslIproWriter);
+                    modDbslIproWriter.WriteEndElement();
+                    dbslIproReader.Skip();
                     continue;
                 }
                 else
-                    Console.WriteLine(String.Format("Warning: unexpected node in {0}: {1}", Path.Combine(this.paramsObj.MainDir, this.paramsObj.IcsIproFile), icsIproReader.Name));
-                icsIproReader.Read();
-                if (icsIproReader.EOF)
+                    Console.WriteLine(String.Format("Warning: unexpected node in {0}: {1}", Path.Combine(this.paramsObj.MainDir, this.paramsObj.DbslIproFile), dbslIproReader.Name));
+                dbslIproReader.Read();
+                if (dbslIproReader.EOF)
                     break;
             }
             //Write number of PSMs that are considered by FPF but without SpectraST features into log file
             this.logFileLines.Add(String.Format("{0} at total.", this.noSpstFeatCnt));
             
-            icsIproReader.Close();
+            dbslIproReader.Close();
             msmsRunReader.Close();
-            modIcsIproWriter.Close();
+            modDbslIproWriter.Close();
         }
 
-        private void ReadMsmsRun(XmlReader msmsRunReader, XmlWriter modIcsIproWriter)
+        private void ReadMsmsRun(XmlReader msmsRunReader, XmlWriter modDbslIproWriter)
         {
             //Reader setup
             XmlReaderSettings readerSettings = new XmlReaderSettings { IgnoreWhitespace = true };
@@ -635,7 +635,7 @@ namespace FPF
                 {
                     string psmName = msmsRunReader.GetAttribute("spectrum");
                     if (IsToBeFiltered(psmName) == false)
-                        modIcsIproWriter.WriteNode(msmsRunReader, false);
+                        modDbslIproWriter.WriteNode(msmsRunReader, false);
                     else
                         msmsRunReader.Skip();
                     continue;
@@ -643,7 +643,7 @@ namespace FPF
                 else if (msmsRunReader.EOF == true)
                     break;
                 else //Other elements in msms_run_summary
-                    modIcsIproWriter.WriteNode(msmsRunReader, false);
+                    modDbslIproWriter.WriteNode(msmsRunReader, false);
             }
         }
 
@@ -657,17 +657,17 @@ namespace FPF
         private bool IsToBeFiltered(string psmName)
         {
             //If the PSM need not to be considered (FDR too small / shared peptide / decoy / etc.)
-            if (!this.dataContainerObj.icsPsmFFDic.ContainsKey(psmName))
+            if (!this.dataContainerObj.dbslPsmFFDic.ContainsKey(psmName))
                 return false;
 
             //Check whether the PSM is common (also in database search) or one of those added by spectraST
-            if (this.dataContainerObj.idsPsmIdLi.Contains(psmName))
+            if (this.dataContainerObj.dbPsmIdLi.Contains(psmName))
                 return false;
 
             this.consideredCnt++;
            
             //Filtering for every feature
-            this.dataContainerObj.icsPsmFFDic.TryGetValue(psmName, out ds_Psm_ForFilter psmInfoObj);
+            this.dataContainerObj.dbslPsmFFDic.TryGetValue(psmName, out ds_Psm_ForFilter psmInfoObj);
             double featValue;
             bool b_noSpstFeat = false;
             int featMeetCritCnt = 0;

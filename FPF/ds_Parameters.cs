@@ -7,14 +7,14 @@ namespace FPF
     public class ds_Parameters
     {
         private string _mainDir; //Main directory of all the files related to FPF (except for the parameter file)
-        private string _idsIproFile; //Name of the iProphet file from IDS
-        private string _icsIproFile; //Name of the iProphet file from ICS
-        private string _modIcsIproFile; //Name of the modified iProphet file from ICS
+        private string _dbIproFile; //Name of the iProphet file from identification based on DB searching
+        private string _dbslIproFile; //Name of the iProphet file from identification based on DB+SL searching
+        private string _modDbslIproFile; //Name of the modified iProphet file from identification based on DB+SL searching
         private int _channelCnt;//Total number of channels
         private int _refChannel;//Number of reference channel (starting from 1)
         private List<(string, string)> _decoyKeywordLi = new List<(string, string)>(); //Array storing prefixes of decoy proteins
-        private float _idsFdr001Prob; // FDR 1% probability of IDS
-        private float _icsFdr001Prob; //FDR 1% probability of ICS
+        private float _dbFdr001Prob; // FDR 1% probability of identification based on DB searching
+        private float _dbslFdr001Prob; //FDR 1% probability of identification based on DB+SL searching
 
         //A dictionary that stores whether the global param values are correctly specified by the user or not
         //Key: Parameter names in param file; Value: if the param is correctly specified by the user
@@ -35,20 +35,20 @@ namespace FPF
             set { _mainDir = value; }
         }
 
-        public string IdsIproFile
+        public string DbIproFile
         {
-            get { return _idsIproFile; }
-            set { _idsIproFile = value; }
+            get { return _dbIproFile; }
+            set { _dbIproFile = value; }
         }
-        public string IcsIproFile
+        public string DbslIproFile
         {
-            get { return _icsIproFile; }
-            set { _icsIproFile = value; }
+            get { return _dbslIproFile; }
+            set { _dbslIproFile = value; }
         }
-        public string ModIcsIproFile
+        public string ModDbslIproFile
         {
-            get { return _modIcsIproFile; }
-            set { _modIcsIproFile = value; }
+            get { return _modDbslIproFile; }
+            set { _modDbslIproFile = value; }
         }
         public int ChannelCnt
         {
@@ -69,15 +69,15 @@ namespace FPF
         {
             get { return _decoyKeywordLi;}
         }
-        public float IdsFdr001Prob
+        public float DbFdr001Prob
         {
-            get { return _idsFdr001Prob; }
-            set { _idsFdr001Prob = value; }
+            get { return _dbFdr001Prob; }
+            set { _dbFdr001Prob = value; }
         }
-        public float IcsFdr001Prob
+        public float DbslFdr001Prob
         {
-            get { return _icsFdr001Prob; }
-            set { _icsFdr001Prob = value; }
+            get { return _dbslFdr001Prob; }
+            set { _dbslFdr001Prob = value; }
         }
 
         /// <summary>
