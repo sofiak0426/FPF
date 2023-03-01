@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "S2I_Filter": {
+      "commandName": "Project",
+      "commandLineArgs": "S2IFilter_params.txt"
+    }
+  }
+}
